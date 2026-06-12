@@ -197,7 +197,7 @@ local function findNextPoint()
         local bestIndex, bestTier
         for index = 1, (GetNumTalents(tab, false, false, group) or 0) do
             local name, _, tier, _, rank, maxRank = GetTalentInfo(tab, index, false, false, group)
-            if name then
+            if name and not (active.skip and active.skip[strlower(name)]) then
                 local want = active.target[strlower(name)]
                 if want then
                     want = min(want, maxRank or want)
@@ -220,25 +220,38 @@ end
 -- it should be by that step. Level-aware -- we only place the points you have.
 local function findNextOrdered()
     local group = active.group
-    local liveRank, nameIndex = {}, {}
+    local skip = active.skip
+    -- One pass over the live trees: current rank, name->{tab,index,tier}, and the
+    -- running point total per tree (for the tier gate below).
+    local liveRank, loc, tabTotal = {}, {}, {}
     local numTabs = GetNumTalentTabs(false, false, group) or 0
     for tab = 1, numTabs do
+        tabTotal[tab] = 0
         for index = 1, (GetNumTalents(tab, false, false, group) or 0) do
-            local name, _, _, _, rank = GetTalentInfo(tab, index, false, false, group)
+            local name, _, t, _, rank = GetTalentInfo(tab, index, false, false, group)
             if name then
                 local key = strlower(name)
                 liveRank[key] = rank or 0
-                nameIndex[key] = { tab, index }
+                loc[key] = { tab, index, t or 1 }
+                tabTotal[tab] = tabTotal[tab] + (rank or 0)
             end
         end
     end
+    -- Walk the pick order; return the first talent that still wants a point AND is
+    -- legal to take right now -- its tier's point gate ((tier-1)*5 in that tree)
+    -- must be met. Picks set aside earlier (active.skip -- e.g. an arrow prereq the
+    -- order reached before its dependency) are passed over and retried later.
+    -- Deferring an illegal pick and moving on lets a slightly mis-ordered build
+    -- self-heal instead of dead-ending the way a raw "follow the list" would.
     local seen = {}
     for _, talentName in ipairs(active.order) do
         local key = strlower(talentName)
         seen[key] = (seen[key] or 0) + 1
-        if (liveRank[key] or 0) < seen[key] then
-            local ti = nameIndex[key]
-            if ti then return ti[1], ti[2] end
+        if (liveRank[key] or 0) < seen[key] and not (skip and skip[key]) then
+            local l = loc[key]
+            if l and tabTotal[l[1]] >= (l[3] - 1) * 5 then
+                return l[1], l[2]
+            end
         end
     end
     return nil
@@ -254,8 +267,20 @@ local function applyNextPoint()
         return
     end
 
-    local tab, index = active.order and findNextOrdered() or findNextPoint()
+    -- NOTE: an `A and f() or g()` here would truncate the multi-return to one
+    -- value (index would become nil), so branch explicitly to keep both returns.
+    local tab, index
+    if active.order then tab, index = findNextOrdered() else tab, index = findNextPoint() end
     if not tab then
+        -- Nothing legal to place right now. If we deferred any picks (active.skip)
+        -- and have placed points since the last sweep, those new points may have
+        -- unblocked them -- clear the deferrals and take one more sweep before
+        -- giving up. didEndPass guards against looping when they're truly stuck.
+        if active.skip and next(active.skip) and not active.didEndPass then
+            active.didEndPass = true
+            active.skip = nil
+            return applyNextPoint()
+        end
         local left = GetUnspentPoints()
         if left > 0 then
             stopApply(format("stopped -- %s applied, but %d point(s) couldn't be placed.", active.label, left))
@@ -264,8 +289,10 @@ local function applyNextPoint()
         end
         return
     end
+    active.didEndPass = false -- found a pick; permit a fresh retry sweep after it lands
 
     local nm = GetTalentInfo(tab, index, false, false, active.group)
+    active.lastName = nm -- remembered so the watchdog knows which pick to defer on a stall
     if tmDebug then Print(format("|cff888888debug|r learn [%d,%d] %s grp=%s", tab, index, tostring(nm), tostring(active.group))) end
 
     -- LearnTalent returns false if the game refuses (combat, illegal placement);
@@ -279,10 +306,22 @@ local function applyNextPoint()
         return
     end
 
-    -- Watchdog guards a silent stall (5s tolerates latency); re-run /tm to resume.
+    -- Watchdog guards a silent stall: LearnTalent returns truthy even when the
+    -- tree quietly refuses an illegal pick (no CHARACTER_POINTS_CHANGED fires).
+    -- 5s tolerates server latency. On a stall we DEFER the pick (set it aside and
+    -- carry on with the rest) instead of aborting -- it's usually an arrow prereq
+    -- the order reached before its dependency, and it gets retried in the
+    -- end-of-sweep pass once that prereq is in.
     if active.watchdog then active.watchdog:Cancel() end
     active.watchdog = C_Timer.NewTimer(5, function()
-        stopApply("stopped -- the last talent didn't register. Re-run /tm to resume.")
+        if not active then return end
+        active.watchdog = nil
+        if active.lastName then
+            active.skip = active.skip or {}
+            active.skip[strlower(active.lastName)] = true
+            Print(format("|cffaaaaaa'%s' isn't available yet -- deferring it and continuing.|r", tostring(active.lastName)))
+        end
+        applyNextPoint()
     end)
 end
 
@@ -295,6 +334,7 @@ driver:SetScript("OnEvent", function(_, event, change)
     if change and change > 0 then return end
     if active.watchdog then active.watchdog:Cancel(); active.watchdog = nil end
     active.placed = active.placed + 1
+    active.didEndPass = false -- a fresh point may unblock deferred picks; allow a retry sweep
     applyNextPoint()
 end)
 
