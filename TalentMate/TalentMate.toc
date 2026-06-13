@@ -2,7 +2,11 @@
 ## Title: TalentMate
 ## Notes: Class-aware talent build library - pick a PvE / PvP / leveling spec and it spends your points for you. Type /tm.
 ## Author: Camperistic
-## Version: 1.0
+## Version: 1.1
 ## IconTexture: Interface\ICONS\Spell_Holy_Renew
+## OptionalDependencies: WagoAnalytics
+## X-Wago-ID:
 
+libs\LibStub\LibStub.lua
+libs\WagoAnalyticsShim\Shim.lua
 TalentMate.lua
