@@ -7,18 +7,22 @@ It guides you from level 1 to 70 RestedXP-style, but goes further: it coaches yo
 **talents, gear, pets, and rotation** as you go, so you're not just leveling fast —
 you're leveling *well*.
 
-> **Flagship class: Beast Mastery Hunter** (fully implemented). The engine and UI are
-> class-agnostic and data-driven — every other class/spec plugs in as data files
-> (see *Roadmap*).
+> **All 9 classes** have a researched leveling talent path + rotation helper. The route
+> works for **every race and both factions**. Beast Mastery Hunter is the deepest slice
+> (full gear milestones, pre-raid BiS, and pet guidance); the other classes have stat-priority
+> gear guidance with detailed item lists on the roadmap.
 
 ---
 
 ## Features
 
-- **Live leveling route** — a step-by-step zone progression for Alliance & Horde
-  (Azeroth 1–60 → the shared Outland 58–70 spine), with quest hubs, recommended
-  level bands, and dungeon stops. Steps **auto-complete** by quest turn-in, level,
-  or arrival, and you can `Done / Skip / Back` manually.
+- **Live leveling route (all races, both factions)** — per-race starting zones stitched
+  onto a shared Alliance/Horde spine (Azeroth 1–60 → Outland 58–70), with quest hubs,
+  level bands, and dungeon stops. Steps **auto-complete** by quest turn-in, level, or
+  arrival; `Done / Skip / Back` manually.
+- **All 9 classes coached** — Warrior (Arms), Paladin (Ret), Hunter (BM), Rogue (Combat),
+  Priest (Shadow), Shaman (Enh), Mage (Frost), Warlock (Demo/Felguard), Druid (Feral):
+  full 61-point leveling talent path + an in-combat rotation helper for each.
 - **Waypoint arrow** — a lightweight directional arrow points to the current step's
   coordinates and shows distance. Drag to reposition.
 - **Real-time talent coach** — counts the points you've actually spent and tells you
@@ -54,6 +58,7 @@ World of Warcraft/_classic_/Interface/AddOns/Zenith
 | `/zen arrow` | Toggle the waypoint arrow |
 | `/zen rotation` | Toggle the DPS helper |
 | `/zen lock` · `/zen unlock` | Lock/unlock frame dragging |
+| `/zen config` | Open the options panel |
 | `/zen reset` | Restart route progress |
 
 Minimap button: **left-click** opens the guide, **right-click** toggles the arrow.
@@ -64,13 +69,14 @@ Minimap button: **left-click** opens the guide, **right-click** toggles the arro
 Zenith/
   Core/     Init.lua (namespace, lifecycle, message bus, saved vars), Util.lua
   Engine/   StepEngine, Waypoint, TalentCoach, RotationHelper, GearAdvisor
-  UI/       MainFrame (window+tabs), Panes (tab content), MiniButton
-  Data/     Routes/  Talents/  Rotations/  Pets/  Gear/   ← all the per-class content
+  UI/       MainFrame (window+tabs), Panes (tab content), MiniButton, Options
+  Data/     Routes/ (faction spine + race starts)  Classes/ (talents+rotation per class)
+            Talents/ Rotations/ Pets/ (Hunter detail)  Gear/ (Hunter detail + generic)
 ```
 
-Engines and UI read from `ns.data.*` registries; **adding a class = adding data files**,
-no engine changes. Saved variables: `ZenithDB` (account) + `ZenithCharDB` (per-character
-route progress).
+Engines and UI read from `ns.data.*` registries; **adding a class = adding one data file**
+(`U.TalentPath` expands a compact grouped plan into the per-level path). Saved variables:
+`ZenithDB` (account) + `ZenithCharDB` (per-character route progress).
 
 ## Data sources
 
@@ -85,13 +91,17 @@ Talent path: **41 BM / 20 MM / 0 SV** ("leveling = endgame", no respec at 70).
 
 ## Roadmap
 
-- [x] **Beast Mastery Hunter** — route, talents, gear, pets, rotation (flagship template)
-- [ ] Remaining Hunter specs (MM/SV) + per-faction quest-level route granularity
-- [ ] Warrior, Mage, Priest, Paladin/Shaman, Rogue, Warlock, Druid
-- [ ] PvP talent/spec paths and battleground gear targets
-- [ ] Turn-by-turn quest steps (true RestedXP granularity) with quest IDs
+- [x] **All 9 classes** — leveling talent path + rotation helper
+- [x] **All races / both factions** — race starts + shared faction spine
+- [x] **Beast Mastery Hunter** — full gear milestones, pre-raid BiS, pets (deepest slice)
+- [x] Release packaging (MIT, `.pkgmeta`, BigWigs packager → CurseForge / Wago / WoWInterface)
+- [ ] Detailed gear milestone + pre-raid BiS item lists for the other 8 classes
+- [ ] Secondary specs (MM/SV Hunter, Fire/Arcane Mage, Ele Shaman, etc.) and PvP paths
+- [ ] **Turn-by-turn quest steps** (true RestedXP granularity) with quest IDs — best done
+      by importing an open quest dataset (e.g. Questie's, with attribution) rather than
+      hand-authoring; this is the main remaining content gap.
 
-Contributions are data files — copy `Data/*/Hunter_*.lua` and fill in your class.
+Contributions are data files — copy `Data/Classes/<Class>.lua` and fill in your spec.
 
 ## Disclaimer
 

@@ -164,6 +164,7 @@ function M:OnEnable()
 			ns:GetModule("Waypoint"):Refresh(); ns:Print("Arrow " .. (ns.account.showArrow and "on" or "off"))
 		elseif msg == "rotation" or msg == "dps" then ns.account.showRotation = not ns.account.showRotation
 			ns:Print("Rotation helper " .. (ns.account.showRotation and "on" or "off"))
+		elseif msg == "config" or msg == "options" then ns:GetModule("Options"):Open()
 		elseif msg == "reset" then ns.char.stepIndex = 1; wipe(ns.char.completed)
 			ns:GetModule("StepEngine"):LoadRoute(); ns:Print("Route progress reset.")
 		elseif msg == "next" then ns:GetModule("StepEngine"):Next()

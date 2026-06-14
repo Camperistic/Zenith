@@ -17,24 +17,23 @@ local M = ns:NewModule("StepEngine")
 local activeSteps = {}     -- flat list for the current class+faction
 ns.StepEngine = M
 
--- Build the flat step list for the player's chosen route + faction.
+-- Build the flat step list: race-specific 1–~12 intro + shared faction spine.
 function M:LoadRoute()
 	wipe(activeSteps)
-	local key = ns.char.routeKey or U.PlayerClass()
 	local faction = U.PlayerFaction()
-	local routes = ns.data.routes[key]
-	if not routes then return end
+	local _, race = UnitRace and UnitRace("player")   -- token: "Human","Orc","Scourge"...
+	local spine = ns.data.route and ns.data.route[faction]
+	if not spine then return end
 
-	-- Route data is organized as { Both = {...}, Alliance = {...}, Horde = {...} }
-	-- We merge the faction-appropriate chain. Most data authors a single ordered
-	-- table keyed by faction; "Both" is the shared Outland spine.
-	local chain = routes[faction] or routes.steps or routes.Both
-	if not chain then return end
-
-	for i, step in ipairs(chain) do
-		step.id = step.id or (key .. "-" .. faction .. "-" .. i)
-		activeSteps[#activeSteps + 1] = step
+	local function add(list, tag)
+		if not list then return end
+		for i, step in ipairs(list) do
+			step.id = step.id or (tag .. "-" .. i)
+			activeSteps[#activeSteps + 1] = step
+		end
 	end
+	add(ns.data.starts and ns.data.starts[race], "start-" .. (race or "x"))
+	add(spine, "spine-" .. faction)
 
 	ns.char.stepIndex = U.Clamp(ns.char.stepIndex or 1, 1, math.max(1, #activeSteps))
 	-- Skip past anything already completed so a returning player resumes cleanly.

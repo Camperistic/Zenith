@@ -201,7 +201,7 @@ ns.PaneBuilders.Gear = function(pane)
 			end
 		end
 
-		if GA:IsMaxLevel() then
+		if GA:IsMaxLevel() and data.preraid then
 			out[#out+1] = "\n" .. U.Gold("PRE-RAID BiS (fresh 70)")
 			for _, it in ipairs(data.preraid) do
 				out[#out+1] = string.format("%s %s  %s", U.Accent("•"),
@@ -216,7 +216,9 @@ ns.PaneBuilders.Gear = function(pane)
 						it.name .. U.Dim(" ("..it.slot..")"), U.Dim("— " .. (it.note or "")))
 				end
 			end
-			out[#out+1] = "\n" .. U.Dim("Full pre-raid BiS list unlocks at level 70.")
+			if data.preraid then
+				out[#out+1] = "\n" .. U.Dim("Full pre-raid BiS list unlocks at level 70.")
+			end
 		end
 
 		out[#out+1] = "\n" .. U.Gold("NOTES")
@@ -233,11 +235,19 @@ ns.PaneBuilders.Help = function(pane)
 		local rot = ns.data.rotations[U.PlayerClass()]
 		rot = rot and rot[rot.default or "BM"]
 		if rot then
-			out[#out+1] = U.Gold("ROTATION — openers")
-			for _, o in ipairs(rot.openers) do out[#out+1] = "• " .. o end
-			out[#out+1] = "\n" .. U.Gold("ASPECTS / MANA")
-			for _, a in ipairs(rot.aspects) do out[#out+1] = "• " .. a end
-			out[#out+1] = "\n" .. U.Dim("The on-screen helper suggests your next shot in combat.")
+			if rot.openers then
+				out[#out+1] = U.Gold("ROTATION — openers")
+				for _, o in ipairs(rot.openers) do out[#out+1] = "• " .. o end
+			end
+			if rot.aspects then
+				out[#out+1] = "\n" .. U.Gold("ASPECTS / MANA")
+				for _, a in ipairs(rot.aspects) do out[#out+1] = "• " .. a end
+			end
+			if rot.notes then
+				out[#out+1] = "\n" .. U.Gold("NOTES")
+				for _, a in ipairs(rot.notes) do out[#out+1] = "• " .. a end
+			end
+			out[#out+1] = "\n" .. U.Dim("The on-screen helper suggests your next ability in combat.")
 		end
 		out[#out+1] = "\n" .. U.Gold("COMMANDS")
 		out[#out+1] = "/zenith — toggle window      /zen next | prev"

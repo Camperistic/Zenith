@@ -99,3 +99,25 @@ function U.Clamp(v, lo, hi)
 	if v < lo then return lo elseif v > hi then return hi end
 	return v
 end
+
+-- Expand a compact grouped talent plan into a per-point order list (1 point per
+-- level, starting at L10). Each group: { tree, talent, n=points, spike=bool, note }.
+-- The spike/note attach to the point that COMPLETES the talent (last of the group).
+function U.TalentPath(groups)
+	local order, level = {}, 10
+	for _, g in ipairs(groups) do
+		for i = 1, (g.n or 1) do
+			local last = (i == (g.n or 1))
+			order[#order + 1] = {
+				level  = level,
+				tree   = g.tree,
+				talent = g.talent,
+				spike  = g.spike and last or false,
+				note   = last and g.note or nil,
+			}
+			level = level + 1
+			if level > 70 then return order end
+		end
+	end
+	return order
+end
