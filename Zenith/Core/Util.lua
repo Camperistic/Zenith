@@ -38,6 +38,24 @@ function U.PlayerLevel()
 	return UnitLevel("player")
 end
 
+-- Race bitmask (matches Questie/Blizzard requiredRaces) for filtering quest steps.
+local RACE_BIT = {
+	Human = 1, Dwarf = 2, NightElf = 4, Gnome = 8, Draenei = 1024,
+	Orc = 16, Scourge = 32, Tauren = 64, Troll = 128, BloodElf = 512,
+}
+function U.PlayerRaceBit()
+	local _, token = UnitRace("player")
+	return RACE_BIT[token] or 0
+end
+
+-- Is a quest with this requiredRaces mask available to the player? (nil/0 = all)
+function U.RaceAllowed(mask)
+	if not mask or mask == 0 then return true end
+	local bit = U.PlayerRaceBit()
+	if bit == 0 then return true end
+	return math.floor(mask / bit) % 2 == 1
+end
+
 -- Current player position on its map, as 0-100 numbers, or nil.
 function U.PlayerPosition()
 	local mapID = C_Map and C_Map.GetBestMapForUnit and C_Map.GetBestMapForUnit("player")

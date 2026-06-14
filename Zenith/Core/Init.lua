@@ -47,7 +47,8 @@ function ns:GetModule(name) return self.modules[name] end
 -- Data registries — Data/* files populate these tables at load time.
 -- ---------------------------------------------------------------------------
 ns.data = {
-	route     = {},   -- [faction] = { steps... }        (class-agnostic spine)
+	questRoute = {},  -- [faction] = { quest steps... }    (generated from Questie DB)
+	route     = {},   -- [faction] = { steps... }        (hand-authored fallback spine)
 	starts    = {},   -- [raceToken] = { steps... }       (1–~12 race intro, zone-level)
 	detailed  = {},   -- [raceToken] = { coversTo=N, steps={...} }  turn-by-turn early game
 	talents   = {},   -- [class] = { [specKey] = { order... } }

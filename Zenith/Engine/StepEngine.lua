@@ -23,6 +23,31 @@ function M:LoadRoute()
 	local faction = U.PlayerFaction()
 	local race                                        -- token: "Human","Orc","Scourge"...
 	if UnitRace then local _; _, race = UnitRace("player") end
+
+	-- Preferred: the comprehensive quest route generated from the Questie DB,
+	-- filtered to quests available to this character's race. Falls back to the
+	-- hand-authored race-start + zone spine if the generated data isn't present.
+	local questRoute = ns.data.questRoute and ns.data.questRoute[faction]
+	if questRoute then
+		local prevTravel = false
+		for i, step in ipairs(questRoute) do
+			if U.RaceAllowed(step.races) then
+				if step.kind == "travel" and prevTravel then
+					-- collapse consecutive zone headers (race filtered the zone empty)
+				else
+					step.id = step.id or ("q-" .. faction .. "-" .. i)
+					activeSteps[#activeSteps + 1] = step
+					prevTravel = (step.kind == "travel")
+				end
+			end
+		end
+		ns.char.stepIndex = U.Clamp(ns.char.stepIndex or 1, 1, math.max(1, #activeSteps))
+		M:AdvancePastCompleted()
+		ns:SendMessage("ZENITH_ROUTE_LOADED")
+		ns:SendMessage("ZENITH_STEP_CHANGED", ns.char.stepIndex, M:CurrentStep())
+		return
+	end
+
 	local spine = ns.data.route and ns.data.route[faction]
 	if not spine then return end
 

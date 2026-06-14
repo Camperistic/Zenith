@@ -2,6 +2,26 @@
 
 All notable changes to Zenith are documented here.
 
+## [0.4.0] — 2026-06-14
+
+### Added
+- **Comprehensive quest route, all zones 1–70** — generated from the open **Questie**
+  TBC database via `tools/import_questie.lua`: ~3,600 quest steps per faction with real
+  quest names, objective text, **correct Classic uiMapIDs**, real giver coordinates, and
+  per-quest race masks. Ordered Elwynn → … → Shadowmoon Valley.
+- **Per-race routing**: each character sees its own starting chain (racial start zones are
+  owner-tagged) plus the shared faction path; quests are race-filtered at runtime.
+- Wago project id wired in (`X-Wago-ID`).
+
+### Changed
+- The generated quest route is now the primary route. Retired the hand-authored
+  fallback files (`Leveling.lua`, `Detailed_Alliance.lua`) — they used *retail* map IDs,
+  which are wrong on TBC Classic; the generated data uses the correct Classic IDs.
+
+### Credits
+- Quest/coordinate data derived from the **[Questie](https://github.com/Questie/Questie)**
+  project's open database (community-maintained game data). See README.
+
 ## [0.3.0] — 2026-06-14
 
 ### Added

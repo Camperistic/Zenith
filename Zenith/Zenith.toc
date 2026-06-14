@@ -2,7 +2,7 @@
 ## Title: |cff73db45Zenith|r
 ## Notes: Guided ascent to 70 — RestedXP-style leveling + min-max talent, gear & rotation coaching for TBC Classic.
 ## Author: Camperistic
-## Version: 0.3.0
+## Version: 0.4.0
 ## OptionalDeps: TomTom
 ## SavedVariables: ZenithDB
 ## SavedVariablesPerCharacter: ZenithCharDB
@@ -10,8 +10,7 @@
 ## X-Category: Leveling
 ## X-Website: https://github.com/Camperistic/Zenith
 ## X-License: MIT
-# Fill in your Wago project id to enable Wago packaging/analytics:
-## X-Wago-ID:
+## X-Wago-ID: bGoyvY60
 
 # Libraries
 libs\LibStub\LibStub.lua
@@ -21,8 +20,9 @@ Core\Init.lua
 Core\Util.lua
 
 # Data (registered into ns.data.*)
-Data\Routes\Leveling.lua
-Data\Routes\Detailed_Alliance.lua
+# Comprehensive quest route generated from the Questie DB (tools/import_questie.lua)
+Data\Routes\Generated\Gen_Alliance.lua
+Data\Routes\Generated\Gen_Horde.lua
 Data\Talents\Hunter_BM.lua
 Data\Rotations\Hunter_BM.lua
 Data\Pets\Hunter_Pets.lua

@@ -259,8 +259,9 @@ ns.PaneBuilders.Help = function(pane)
 		out[#out+1] = "/zen rotation — toggle DPS helper"
 		out[#out+1] = "/zen lock | unlock — move frames"
 		out[#out+1] = "/zen reset — restart route progress"
-		out[#out+1] = "\n" .. U.Gold("SOURCES")
-		out[#out+1] = U.Dim("Wowhead, Icy-Veins, Warcraft Tavern, wowtbc.gg — TBC Classic BM Hunter guides. See README.")
+		out[#out+1] = "\n" .. U.Gold("SOURCES & CREDITS")
+		out[#out+1] = U.Dim("Class data: Wowhead, Icy-Veins, Warcraft Tavern, wowtbc.gg.")
+		out[#out+1] = U.Dim("Quest route data generated from the Questie project's open database. See README.")
 		scroll:Set(table.concat(out, "\n"))
 	end
 end

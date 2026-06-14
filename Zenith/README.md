@@ -16,15 +16,15 @@ you're leveling *well*.
 
 ## Features
 
-- **Quest-by-quest guide + waypoints** — the engine supports true turn-by-turn steps
-  (accept → objective → turn-in) with a waypoint per quest and **automatic detection**
-  of accepting, completing objectives, and turning in (tracked by quest title — no
-  hard-coded IDs). Optional **TomTom** integration drives world/minimap pins.
-  *Worked slice shipped: Human 1–15 (Northshire → Elwynn → Westfall).*
-- **Full 1–70 coverage (all races, both factions)** — per-race starting zones stitched
-  onto a shared Alliance/Horde spine (Azeroth 1–60 → Outland 58–70). Currently a mix of
-  turn-by-turn (the early slice) and zone-level for the rest; both auto-advance.
-  `Done / Skip / Back` manually.
+- **Comprehensive quest guide + waypoints (all zones 1–70)** — ~3,600 quest steps per
+  faction generated from the open [Questie](https://github.com/Questie/Questie) database:
+  real quest names, objective text, a **waypoint per quest** (correct Classic map IDs +
+  real coordinates), ordered Elwynn → … → Shadowmoon Valley. Steps **auto-advance** on
+  accepting / completing objectives / turning in (tracked by quest title — no hard-coded
+  IDs); `Done / Skip / Back` manually. Optional **TomTom** integration drives world/minimap pins.
+- **Per-race, both factions** — each character sees its own starting chain plus the shared
+  faction path; quests are race-filtered at runtime. Regenerate anytime with
+  `tools/import_questie.lua`.
 - **All 9 classes coached** — Warrior (Arms), Paladin (Ret), Hunter (BM), Rogue (Combat),
   Priest (Shadow), Shaman (Enh), Mage (Frost), Warlock (Demo/Felguard), Druid (Feral):
   full 61-point leveling talent path + an in-combat rotation helper for each.
@@ -94,6 +94,15 @@ All Beast Mastery Hunter data was researched from the top TBC Classic references
 
 Talent path: **41 BM / 20 MM / 0 SV** ("leveling = endgame", no respec at 70).
 
+## Credits
+
+- **Quest route data** is generated from the **[Questie](https://github.com/Questie/Questie)**
+  project's open TBC database (community-maintained quest/NPC coordinates — factual game data).
+  Zenith extracts quest names, levels, race availability, and giver coordinates and re-emits
+  them in its own format via `tools/import_questie.lua`; no Questie code is bundled. Huge thanks
+  to the Questie maintainers and contributors. Run the importer yourself to regenerate/update.
+- **TomTom** (optional) for enhanced world/minimap waypoint pins.
+
 ## Roadmap
 
 - [x] **All 9 classes** — leveling talent path + rotation helper
@@ -101,10 +110,9 @@ Talent path: **41 BM / 20 MM / 0 SV** ("leveling = endgame", no respec at 70).
 - [x] **Beast Mastery Hunter** — full gear milestones, pre-raid BiS, pets (deepest slice)
 - [x] Release packaging (MIT, `.pkgmeta`, BigWigs packager → CurseForge / Wago / WoWInterface)
 - [x] **Quest-granular engine** (per-quest waypoints, accept/objective/turn-in auto-detect, TomTom)
-- [x] Turn-by-turn worked slice (Human 1–15)
-- [ ] **Fill turn-by-turn data for the rest of 1–70, all races** — the remaining content
-      effort. Hand-authoring matches RestedXP quality but is slow; importing an open quest
-      dataset (e.g. Questie's, with attribution) is the faster path. Same engine either way.
+- [x] **Comprehensive quest route, all zones 1–70, both factions, per-race** (Questie import)
+- [ ] Hub-cluster ordering within zones (current order is by quest level — followable but
+      not yet travel-optimized like a hand-tuned RestedXP route)
 - [ ] Detailed gear milestone + pre-raid BiS item lists for the other 8 classes
 - [ ] Secondary specs (MM/SV Hunter, Fire/Arcane Mage, Ele Shaman, etc.) and PvP paths
 
