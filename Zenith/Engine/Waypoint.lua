@@ -15,8 +15,14 @@ local arrow                     -- the frame
 local target                    -- { mapID, x, y, label }
 
 function M:SetTarget(mapID, x, y, label)
-	if not (mapID and x and y) then target = nil
-	else target = { mapID = mapID, x = x, y = y, label = label } end
+	-- No-op if unchanged (avoids TomTom add/remove churn on every QUEST_LOG_UPDATE).
+	if target and mapID and target.mapID == mapID and target.x == x and target.y == y then return end
+	if not (mapID and x and y) then
+		if not target then return end
+		target = nil
+	else
+		target = { mapID = mapID, x = x, y = y, label = label }
+	end
 	if arrow then arrow:SetShown(target ~= nil and ns.account.showArrow) end
 	M:UpdateTomTom()
 end
@@ -36,15 +42,13 @@ end
 
 function M:ClearTarget() M:SetTarget(nil) end
 
--- Pull the current step's coords into the arrow; if the current step has none
--- (e.g. a "Travel to X" header), look ahead to the next objective with coords.
+-- Point the arrow at the right place for a step: giver, or the turn-in NPC once
+-- objectives are complete, or the next objective if this step is a zone header.
 function M:SyncFromStep(step)
-	if not (step and step.mapID and step.x and step.y) then
-		local se = ns:GetModule("StepEngine")
-		step = se and se.NextCoordStep and se:NextCoordStep() or nil
-	end
-	if step and step.mapID and step.x and step.y then
-		M:SetTarget(step.mapID, step.x, step.y, step.zone)
+	local se = ns:GetModule("StepEngine")
+	local mapID, x, y, label = se and se.WaypointFor and se:WaypointFor(step)
+	if mapID and x and y then
+		M:SetTarget(mapID, x, y, label)
 	else
 		M:ClearTarget()
 	end
@@ -125,7 +129,8 @@ function M:OnEnable()
 	arrow = buildArrow()
 	arrow:Hide()
 	ns:RegisterMessage("ZENITH_STEP_CHANGED", function(_, _, step) M:SyncFromStep(step) end)
-	-- prime with whatever step is current
+	-- Re-evaluate when quest objectives change (arrow flips giver → turn-in).
 	local se = ns:GetModule("StepEngine")
+	ns:On("QUEST_LOG_UPDATE", function() if se then M:SyncFromStep(se:CurrentStep()) end end)
 	if se then M:SyncFromStep(se:CurrentStep()) end
 end

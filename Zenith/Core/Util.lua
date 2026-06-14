@@ -100,6 +100,15 @@ function U.IsQuestComplete(questID)
 	return false
 end
 
+-- Quest is in the log and its objectives are complete (ready to hand in).
+function U.QuestReadyToTurnIn(questID)
+	if not questID then return false end
+	if C_QuestLog and C_QuestLog.IsComplete and C_QuestLog.GetLogIndexForQuestID then
+		return C_QuestLog.GetLogIndexForQuestID(questID) ~= nil and C_QuestLog.IsComplete(questID)
+	end
+	return false
+end
+
 -- Is the quest currently in the player's log?
 function U.IsQuestInLog(questID)
 	if not questID then return false end

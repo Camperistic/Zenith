@@ -20,7 +20,7 @@ function M:OnEnable()
 
 	local icon = btn:CreateTexture(nil, "BACKGROUND")
 	icon:SetSize(20, 20); icon:SetPoint("CENTER", 0, 1)
-	icon:SetTexture("Interface\\Icons\\Ability_Hunter_BeastWithin")  -- fel-green BM icon
+	icon:SetTexture("Interface\\Icons\\INV_Misc_Map_01")  -- neutral map icon
 	icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
 
 	btn:RegisterForClicks("LeftButtonUp", "RightButtonUp")

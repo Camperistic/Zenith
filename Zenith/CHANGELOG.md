@@ -2,6 +2,22 @@
 
 All notable changes to Zenith are documented here.
 
+## [0.6.0] — 2026-06-14
+
+Ship-readiness sweep.
+
+### Added
+- **Turn-in waypointing**: each quest step now also stores the turn-in location
+  (from Questie's `finishedBy`); the arrow points at the giver while you work the
+  quest and **flips to the turn-in NPC** the moment its objectives are complete.
+- First-login **welcome line** with the next zone + a `/zen help` command listing.
+- Neutral minimap map icon (was a Hunter-specific icon).
+- Install note for the "Load out of date AddOns" toggle.
+
+### Changed / Fixed
+- `SetTarget` no-ops when the destination is unchanged, so the new per-quest-update
+  arrow refresh doesn't churn TomTom pins.
+
 ## [0.5.0] — 2026-06-14
 
 Reliability & polish pass (informed by a full code review).

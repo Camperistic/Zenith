@@ -54,6 +54,11 @@ World of Warcraft/_classic_/Interface/AddOns/Zenith
 
 (`Zenith.toc`, `Core/`, `Engine/`, `UI/`, `Data/`, `libs/` should sit directly inside.)
 
+If Zenith shows as **out of date** on the character-select AddOns list, tick
+**"Load out of date AddOns"** — the `## Interface` number just trails the live
+TBC Classic patch; nothing else is required. (Tagged releases auto-stamp the
+current interface via the packager.)
+
 ## Commands
 
 | Command | Action |
@@ -112,7 +117,9 @@ Talent path: **41 BM / 20 MM / 0 SV** ("leveling = endgame", no respec at 70).
 - [x] **Quest-granular engine** (per-quest waypoints, accept/objective/turn-in auto-detect, TomTom)
 - [x] **Comprehensive quest route, all zones 1–70, both factions, per-race** (Questie import)
 - [x] **Hub-cluster ordering** within zones (nearby quests grouped, level-banded nearest-neighbour)
+- [x] **Turn-in waypointing** (arrow flips from giver to turn-in when objectives are done)
 - [ ] Cross-zone routing polish (when to bounce between adjacent zones at overlapping levels)
+- [ ] Flight-path / hearthstone hints alongside quests
 - [ ] Detailed gear milestone + pre-raid BiS item lists for the other 8 classes
 - [ ] Secondary specs (MM/SV Hunter, Fire/Arcane Mage, Ele Shaman, etc.) and PvP paths
 

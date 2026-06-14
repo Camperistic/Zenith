@@ -76,6 +76,22 @@ local function resolveStart(startedBy, zoneArea)
 	end
 end
 
+-- finishedBy = { creatureEnd{}, objectEnd{} } — the quest turn-in location.
+local function resolveEnd(finishedBy, zoneArea)
+	if type(finishedBy) ~= "table" then return nil end
+	local creatures, objs = finishedBy[1], finishedBy[2]
+	if type(creatures) == "table" and creatures[1] and npcs[creatures[1]] then
+		local a, x, y = firstSpawn(npcs[creatures[1]][NPC_SPAWNS], zoneArea)
+		if x then return a, x, y end
+	end
+	if type(objs) == "table" and objs[1] and objects[objs[1]] then
+		local a, x, y = firstSpawn(objects[objs[1]][OBJ_SPAWNS], zoneArea)
+		if x then return a, x, y end
+	end
+end
+
+local function round(v) return math.floor(v * 10 + 0.5) / 10 end
+
 local function dist(ax, ay, bx, by) local dx, dy = ax - bx, ay - by; return math.sqrt(dx * dx + dy * dy) end
 
 -- Travel-optimized within-zone order: group quests into hubs by giver proximity,
@@ -263,13 +279,25 @@ local function buildFaction(orderList, bits)
 			local detail = type(q[Q.objText]) == "table" and q[Q.objText][1] or nil
 			-- In a racial start zone, force the owner mask; elsewhere keep the quest's own.
 			local races = owner or ((q[Q.races] and q[Q.races] ~= 0) and q[Q.races] or nil)
-			steps[#steps + 1] = {
+			local st = {
 				kind = "quest", zone = z.name, mapID = it.mapID, qid = it.e.qid,
-				x = it.x and math.floor(it.x * 10 + 0.5) / 10 or nil,
-				y = it.y and math.floor(it.y * 10 + 0.5) / 10 or nil,
+				x = it.x and round(it.x) or nil,
+				y = it.y and round(it.y) or nil,
 				band = { reqL, lvl }, quest = q[Q.name], text = q[Q.name], detail = detail,
 				races = races,
 			}
+			-- Turn-in coordinate (where to hand the quest in), stored only when it's
+			-- meaningfully different from the giver — so the arrow can switch to it
+			-- once objectives are complete.
+			local fca, fx, fy = resolveEnd(q[Q.finishedBy], z.area)
+			if fx then
+				local fmap = (fca and areaInfo[fca] and areaInfo[fca].ui) or it.mapID
+				local far = it.x and it.y and (math.abs(fx - it.x) + math.abs(fy - it.y) > 4)
+				if fmap ~= st.mapID or far or not it.x then
+					st.tx, st.ty, st.tmap = round(fx), round(fy), fmap
+				end
+			end
+			steps[#steps + 1] = st
 		end
 	end
 	return steps
@@ -297,6 +325,9 @@ local function writeFaction(faction, steps)
 		if s.mapID then parts[#parts+1] = "mapID=" .. s.mapID end
 		if s.x then parts[#parts+1] = "x=" .. s.x end
 		if s.y then parts[#parts+1] = "y=" .. s.y end
+		if s.tx then parts[#parts+1] = "tx=" .. s.tx end
+		if s.ty then parts[#parts+1] = "ty=" .. s.ty end
+		if s.tmap then parts[#parts+1] = "tmap=" .. s.tmap end
 		if s.band then parts[#parts+1] = "band={" .. s.band[1] .. "," .. s.band[2] .. "}" end
 		if s.quest then parts[#parts+1] = "quest=" .. q(s.quest) end
 		if s.text then parts[#parts+1] = "text=" .. q(s.text) end

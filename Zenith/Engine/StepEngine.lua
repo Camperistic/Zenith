@@ -64,6 +64,21 @@ function M:NextCoordStep()
 	end
 end
 
+-- Where the arrow should point for a step: the turn-in NPC once the quest's
+-- objectives are complete, otherwise the giver; for coordinate-less headers,
+-- look ahead to the next objective. Returns mapID, x, y, label, isTurnIn.
+function M:WaypointFor(step)
+	if not step then return nil end
+	if step.qid and step.tmap and step.tx and step.ty and U.QuestReadyToTurnIn(step.qid) then
+		return step.tmap, step.tx, step.ty, (step.zone or "") .. " (turn in)", true
+	end
+	if step.mapID and step.x and step.y then
+		return step.mapID, step.x, step.y, step.zone, false
+	end
+	local s = M:NextCoordStep()
+	if s then return s.mapID, s.x, s.y, s.zone, false end
+end
+
 local GREY_GAP = 6   -- a quest this many levels below you is trivial → auto-skip
 
 -- Stable completion key: prefer the Blizzard quest id so manual completions
