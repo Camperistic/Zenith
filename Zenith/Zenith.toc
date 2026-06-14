@@ -1,0 +1,36 @@
+## Interface: 20504
+## Title: |cff73db45Zenith|r
+## Notes: Guided ascent to 70 — RestedXP-style leveling + min-max talent, gear & rotation coaching for TBC Classic.
+## Author: Camperistic
+## Version: 0.1.0
+## SavedVariables: ZenithDB
+## SavedVariablesPerCharacter: ZenithCharDB
+## DefaultState: enabled
+## X-Category: Leveling
+## X-Flagship: Beast Mastery Hunter
+
+# Libraries
+libs\LibStub\LibStub.lua
+
+# Core
+Core\Init.lua
+Core\Util.lua
+
+# Data (registered into ns.data.*)
+Data\Talents\Hunter_BM.lua
+Data\Routes\Hunter_Route.lua
+Data\Rotations\Hunter_BM.lua
+Data\Pets\Hunter_Pets.lua
+Data\Gear\Hunter_Gear.lua
+
+# Engine
+Engine\StepEngine.lua
+Engine\Waypoint.lua
+Engine\TalentCoach.lua
+Engine\RotationHelper.lua
+Engine\GearAdvisor.lua
+
+# UI
+UI\Panes.lua
+UI\MainFrame.lua
+UI\MiniButton.lua
