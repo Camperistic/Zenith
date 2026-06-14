@@ -2,6 +2,14 @@
 
 All notable changes to Zenith are documented here.
 
+## [0.4.1] — 2026-06-14
+
+### Changed
+- **Hub-cluster route ordering**: within each zone, quests are grouped into hubs by
+  giver proximity and visited via a level-banded nearest-neighbour tour, so you do
+  nearby quests together instead of criss-crossing by quest level. Average step-to-step
+  in-zone hop dropped to ~7.5 map-units. (Importer: `clusterOrder`.)
+
 ## [0.4.0] — 2026-06-14
 
 ### Added

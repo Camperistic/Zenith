@@ -77,6 +77,83 @@ local function resolveStart(startedBy, zoneArea)
 	end
 end
 
+local function dist(ax, ay, bx, by) local dx, dy = ax - bx, ay - by; return math.sqrt(dx * dx + dy * dy) end
+
+-- Travel-optimized within-zone order: group quests into hubs by giver proximity,
+-- then visit hubs via a level-banded nearest-neighbour tour (keeps broad level
+-- progression in wide zones while doing nearby quests together). Returns an ordered
+-- list of { e=entry, x, y, mapID }. Quests whose giver is out-of-zone or has no
+-- coordinate are appended at the end (by level).
+local HUB_RADIUS, BAND = 6, 3
+local function clusterOrder(list, zoneArea, zoneUi)
+	local items, others = {}, {}
+	for _, e in ipairs(list) do
+		local ca, x, y = resolveStart(e.q[Q.startedBy], zoneArea)
+		if x and ca == zoneArea then
+			items[#items + 1] = { e = e, x = x, y = y, lvl = e.q[Q.level], mapID = zoneUi }
+		else
+			others[#others + 1] = { e = e, lvl = e.q[Q.level],
+				x = x, y = y, mapID = (ca and areaInfo[ca] and areaInfo[ca].ui) or zoneUi }
+		end
+	end
+	table.sort(items, function(a, b) return a.lvl < b.lvl end)
+
+	-- build hubs greedily (nearby givers share a hub)
+	local hubs = {}
+	for _, it in ipairs(items) do
+		local h
+		for _, hub in ipairs(hubs) do
+			if dist(it.x, it.y, hub.cx, hub.cy) <= HUB_RADIUS then h = hub; break end
+		end
+		if not h then h = { cx = it.x, cy = it.y, items = {}, minLvl = it.lvl }; hubs[#hubs + 1] = h end
+		h.items[#h.items + 1] = it
+		local n = #h.items
+		h.cx = h.cx + (it.x - h.cx) / n           -- running centroid
+		h.cy = h.cy + (it.y - h.cy) / n
+		h.minLvl = math.min(h.minLvl, it.lvl)
+	end
+
+	local zoneMin = items[1] and items[1].lvl or 1
+	for _, h in ipairs(hubs) do h.band = math.floor((h.minLvl - zoneMin) / BAND) end
+	table.sort(hubs, function(a, b)
+		if a.band ~= b.band then return a.band < b.band end
+		return a.minLvl < b.minLvl
+	end)
+
+	-- nearest-neighbour the hubs within each level band, carrying the last position
+	local ordered, lastx, lasty, i = {}, nil, nil, 1
+	while i <= #hubs do
+		local band, group = hubs[i].band, {}
+		while i <= #hubs and hubs[i].band == band do group[#group + 1] = hubs[i]; i = i + 1 end
+		while #group > 0 do
+			local bestIdx = 1
+			if lastx then
+				local bestD = math.huge
+				for j, h in ipairs(group) do
+					local d = dist(lastx, lasty, h.cx, h.cy)
+					if d < bestD then bestD, bestIdx = d, j end
+				end
+			end
+			local h = table.remove(group, bestIdx)
+			ordered[#ordered + 1] = h
+			lastx, lasty = h.cx, h.cy
+		end
+	end
+
+	-- flatten hubs (within a hub, by level then name)
+	local result = {}
+	for _, h in ipairs(ordered) do
+		table.sort(h.items, function(a, b)
+			if a.lvl ~= b.lvl then return a.lvl < b.lvl end
+			return (a.e.q[Q.name] or "") < (b.e.q[Q.name] or "")
+		end)
+		for _, it in ipairs(h.items) do result[#result + 1] = it end
+	end
+	table.sort(others, function(a, b) return a.lvl < b.lvl end)
+	for _, o in ipairs(others) do result[#result + 1] = o end
+	return result
+end
+
 -- ── Race / faction masks ──────────────────────────────────────────────────────
 local ALLY = { 1, 2, 4, 8, 1024 }              -- Human, Dwarf, NightElf, Gnome, Draenei
 local HORDE = { 16, 32, 64, 128, 512 }         -- Orc, Undead, Tauren, Troll, BloodElf
@@ -176,28 +253,21 @@ local function buildFaction(orderList, bits)
 	-- emit steps
 	local steps = {}
 	for _, z in ipairs(zoneList) do
-		table.sort(z.list, function(a, b)
-			local la, lb = a.q[Q.level], b.q[Q.level]
-			if la ~= lb then return la < lb end
-			return (a.q[Q.name] or "") < (b.q[Q.name] or "")
-		end)
 		local ui = areaInfo[z.area].ui
 		local owner = ZONE_OWNER[z.name]
 		steps[#steps + 1] = { kind = "travel", zone = z.name, mapID = ui, band = { z.minLvl, z.minLvl + 3 },
 			text = "Travel to " .. z.name, races = owner }
-		for _, e in ipairs(z.list) do
-			local q = e.q
-			local ca, x, y = resolveStart(q[Q.startedBy], z.area)
-			local mapID = (ca and areaInfo[ca] and areaInfo[ca].ui) or ui
+		for _, it in ipairs(clusterOrder(z.list, z.area, ui)) do
+			local q = it.e.q
 			local lvl = q[Q.level]
 			local reqL = q[Q.reqLevel] and q[Q.reqLevel] > 0 and q[Q.reqLevel] or lvl
 			local detail = type(q[Q.objText]) == "table" and q[Q.objText][1] or nil
 			-- In a racial start zone, force the owner mask; elsewhere keep the quest's own.
 			local races = owner or ((q[Q.races] and q[Q.races] ~= 0) and q[Q.races] or nil)
 			steps[#steps + 1] = {
-				kind = "quest", zone = z.name, mapID = mapID,
-				x = x and math.floor(x * 10 + 0.5) / 10 or nil,
-				y = y and math.floor(y * 10 + 0.5) / 10 or nil,
+				kind = "quest", zone = z.name, mapID = it.mapID,
+				x = it.x and math.floor(it.x * 10 + 0.5) / 10 or nil,
+				y = it.y and math.floor(it.y * 10 + 0.5) / 10 or nil,
 				band = { reqL, lvl }, quest = q[Q.name], text = q[Q.name], detail = detail,
 				races = races,
 			}

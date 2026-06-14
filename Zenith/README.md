@@ -111,8 +111,8 @@ Talent path: **41 BM / 20 MM / 0 SV** ("leveling = endgame", no respec at 70).
 - [x] Release packaging (MIT, `.pkgmeta`, BigWigs packager → CurseForge / Wago / WoWInterface)
 - [x] **Quest-granular engine** (per-quest waypoints, accept/objective/turn-in auto-detect, TomTom)
 - [x] **Comprehensive quest route, all zones 1–70, both factions, per-race** (Questie import)
-- [ ] Hub-cluster ordering within zones (current order is by quest level — followable but
-      not yet travel-optimized like a hand-tuned RestedXP route)
+- [x] **Hub-cluster ordering** within zones (nearby quests grouped, level-banded nearest-neighbour)
+- [ ] Cross-zone routing polish (when to bounce between adjacent zones at overlapping levels)
 - [ ] Detailed gear milestone + pre-raid BiS item lists for the other 8 classes
 - [ ] Secondary specs (MM/SV Hunter, Fire/Arcane Mage, Ele Shaman, etc.) and PvP paths
 
