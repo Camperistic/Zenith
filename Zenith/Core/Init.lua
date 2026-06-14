@@ -48,9 +48,6 @@ function ns:GetModule(name) return self.modules[name] end
 -- ---------------------------------------------------------------------------
 ns.data = {
 	questRoute = {},  -- [faction] = { quest steps... }    (generated from Questie DB)
-	route     = {},   -- [faction] = { steps... }        (hand-authored fallback spine)
-	starts    = {},   -- [raceToken] = { steps... }       (1–~12 race intro, zone-level)
-	detailed  = {},   -- [raceToken] = { coversTo=N, steps={...} }  turn-by-turn early game
 	talents   = {},   -- [class] = { [specKey] = { order... } }
 	gear      = {},   -- [class] = { milestones..., preraid... }
 	rotations = {},   -- [class] = { [specKey] = { ... } }
@@ -69,6 +66,7 @@ ns.defaults = {
 		useTomTom     = true,
 		showRotation  = true,
 		showTalentPop = true,
+		skipGrey      = true,    -- auto-skip out-leveled (grey) quests
 		minimap       = { hide = false, angle = 215 },
 		framePoint    = nil,   -- saved main-window position
 		arrowPoint    = nil,

@@ -98,8 +98,15 @@ ns.PaneBuilders.Guide = function(pane)
 		local total = SE:Count()
 		local step = SE:CurrentStep()
 		if not step then
-			progress:SetText("No route data for this class yet.")
-			curText:SetText("")
+			curTag:SetText("")
+			curDetail:SetText("")
+			if total > 0 then           -- walked past the final step
+				progress:SetText(U.Accent("Route complete — congratulations, 70!"))
+				curText:SetText("Every quest on the route is done. Hit the Gear tab for pre-raid targets.")
+			else
+				progress:SetText("No route data for your faction.")
+				curText:SetText("")
+			end
 			scroll:Set("")
 			return
 		end
@@ -109,14 +116,16 @@ ns.PaneBuilders.Guide = function(pane)
 		curText:SetText(step.text or "")
 		curDetail:SetText(step.detail or "")
 
-		-- next few steps
+		-- next few INCOMPLETE steps (skip done/grey so the list stays relevant)
 		local lines = {}
-		for i = idx + 1, math.min(total, idx + 8) do
+		local i = idx + 1
+		while i <= total and #lines < 7 do
 			local s = SE:StepAt(i)
-			if s then
+			if s and not SE:IsStepComplete(s) then
 				lines[#lines + 1] = string.format("%s  %s %s",
 					kindTag(s.kind), U.Dim(s.zone or ""), s.text or "")
 			end
+			i = i + 1
 		end
 		scroll:Set(#lines > 0 and table.concat(lines, "\n\n") or U.Dim("Route complete — congratulations, 70!"))
 	end
@@ -195,7 +204,7 @@ ns.PaneBuilders.Gear = function(pane)
 
 		-- pet tip for current band
 		local pets = ns.data.pets[U.PlayerClass()]
-		if pets then
+		if pets and pets.phases then
 			local lvl = U.PlayerLevel()
 			for _, ph in ipairs(pets.phases) do
 				if lvl <= ph.band[2] then
@@ -215,7 +224,7 @@ ns.PaneBuilders.Gear = function(pane)
 			local ms = GA:CurrentMilestone()
 			if ms then
 				out[#out+1] = "\n" .. U.Gold("CHASE NOW — " .. ms.title)
-				for _, it in ipairs(ms.items) do
+				for _, it in ipairs(ms.items or {}) do
 					out[#out+1] = string.format("%s %s  %s", U.Accent("•"),
 						it.name .. U.Dim(" ("..it.slot..")"), U.Dim("— " .. (it.note or "")))
 				end
@@ -226,7 +235,7 @@ ns.PaneBuilders.Gear = function(pane)
 		end
 
 		out[#out+1] = "\n" .. U.Gold("NOTES")
-		for _, n in ipairs(data.notes) do out[#out+1] = "• " .. n end
+		for _, n in ipairs(data.notes or {}) do out[#out+1] = "• " .. n end
 		scroll:Set(table.concat(out, "\n"))
 	end
 end

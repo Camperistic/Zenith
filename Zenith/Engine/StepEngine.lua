@@ -17,63 +17,25 @@ local M = ns:NewModule("StepEngine")
 local activeSteps = {}     -- flat list for the current class+faction
 ns.StepEngine = M
 
--- Build the flat step list: race-specific 1–~12 intro + shared faction spine.
+-- Build the active step list from the generated quest route for the player's
+-- faction, keeping only quests available to this character's race. Consecutive
+-- zone headers left empty by the race filter are collapsed.
 function M:LoadRoute()
 	wipe(activeSteps)
 	local faction = U.PlayerFaction()
-	local race                                        -- token: "Human","Orc","Scourge"...
-	if UnitRace then local _; _, race = UnitRace("player") end
-
-	-- Preferred: the comprehensive quest route generated from the Questie DB,
-	-- filtered to quests available to this character's race. Falls back to the
-	-- hand-authored race-start + zone spine if the generated data isn't present.
 	local questRoute = ns.data.questRoute and ns.data.questRoute[faction]
-	if questRoute then
-		local prevTravel = false
-		for i, step in ipairs(questRoute) do
-			if U.RaceAllowed(step.races) then
-				if step.kind == "travel" and prevTravel then
-					-- collapse consecutive zone headers (race filtered the zone empty)
-				else
-					step.id = step.id or ("q-" .. faction .. "-" .. i)
-					activeSteps[#activeSteps + 1] = step
-					prevTravel = (step.kind == "travel")
-				end
+	if not questRoute then return end   -- generated data missing → empty route
+
+	local prevTravel = false
+	for i, step in ipairs(questRoute) do
+		if U.RaceAllowed(step.races) then
+			if step.kind == "travel" and prevTravel then
+				-- skip: previous step was also an (empty) zone header
+			else
+				step.id = step.id or ("q-" .. faction .. "-" .. i)
+				activeSteps[#activeSteps + 1] = step
+				prevTravel = (step.kind == "travel")
 			end
-		end
-		ns.char.stepIndex = U.Clamp(ns.char.stepIndex or 1, 1, math.max(1, #activeSteps))
-		M:AdvancePastCompleted()
-		ns:SendMessage("ZENITH_ROUTE_LOADED")
-		ns:SendMessage("ZENITH_STEP_CHANGED", ns.char.stepIndex, M:CurrentStep())
-		return
-	end
-
-	local spine = ns.data.route and ns.data.route[faction]
-	if not spine then return end
-
-	local function add(list, tag)
-		if not list then return end
-		for i, step in ipairs(list) do
-			step.id = step.id or (tag .. "-" .. i)
-			activeSteps[#activeSteps + 1] = step
-		end
-	end
-	-- Turn-by-turn detailed early game (race-specific) if we have it; otherwise the
-	-- zone-level race intro. Either way, append the faction spine beyond the level
-	-- the head already covers.
-	local coverTo = 0
-	local detailed = ns.data.detailed and ns.data.detailed[race]
-	if detailed and detailed.steps then
-		add(detailed.steps, "det-" .. (race or "x"))
-		coverTo = detailed.coversTo or 0
-	else
-		add(ns.data.starts and ns.data.starts[race], "start-" .. (race or "x"))
-	end
-	for i, step in ipairs(spine) do
-		local skip = coverTo > 0 and step.band and step.band[2] and step.band[2] <= coverTo
-		if not skip then
-			step.id = step.id or ("spine-" .. faction .. "-" .. i)
-			activeSteps[#activeSteps + 1] = step
 		end
 	end
 
@@ -93,12 +55,45 @@ function M:CurrentStep()
 	return activeSteps[ns.char.stepIndex or 1]
 end
 
+-- The first step at/after the cursor that carries a waypoint coordinate (so a
+-- coordinate-less "Travel to X" header still points the arrow at the next objective).
+function M:NextCoordStep()
+	for i = ns.char.stepIndex or 1, #activeSteps do
+		local s = activeSteps[i]
+		if s and s.mapID and s.x and s.y then return s end
+	end
+end
+
+local GREY_GAP = 6   -- a quest this many levels below you is trivial → auto-skip
+
+-- Stable completion key: prefer the Blizzard quest id so manual completions
+-- survive route-data updates (array indices shift; quest ids don't).
+local function stepKey(step)
+	return step.qid and ("q" .. step.qid) or step.id
+end
+
 function M:IsStepComplete(step)
 	if not step then return true end
-	if ns.char.completed[step.id] then return true end
+	local key = stepKey(step)
+	if key and ns.char.completed[key] then return true end
 
-	-- Quest-title objective steps (turn-by-turn data).
-	if step.quest then
+	-- Reliable, locale-independent completion: the quest is flagged complete
+	-- (turned in at any point). This also auto-skips quests done before install.
+	if step.qid and U.IsQuestComplete(step.qid) then return true end
+
+	-- Travel/zone headers clear themselves once you're in the target zone.
+	if (step.kind == "travel" or step.kind == "note") and step.mapID then
+		if U.PlayerMapID() == step.mapID then return true end
+	end
+
+	-- Auto-skip out-leveled (grey) quests so a mid-level character isn't sent
+	-- backwards through content they've out-grown.
+	if step.qid and ns.account.skipGrey ~= false and step.band and step.band[2] then
+		if U.PlayerLevel() > step.band[2] + GREY_GAP then return true end
+	end
+
+	-- Quest-title objective steps (hand-authored turn-by-turn data, no qid).
+	if step.quest and not step.qid then
 		local title = step.quest
 		if step.kind == "accept" then
 			if U.QuestInLog(title) or U.QuestObjectivesDone(title) or U.QuestTurnedIn(title) then return true end
@@ -135,19 +130,22 @@ function M:CompleteStep(index)
 	index = index or ns.char.stepIndex
 	local step = activeSteps[index]
 	if not step then return end
-	ns.char.completed[step.id] = true
+	local key = stepKey(step)
+	if key then ns.char.completed[key] = true end
 	ns:SendMessage("ZENITH_STEP_COMPLETED", index, step)
 	if index == ns.char.stepIndex then
 		M:Next()
 	end
 end
 
+-- Advance to the next incomplete step. When none remain the cursor parks at
+-- #activeSteps+1 (a terminal "route done" state) so the poll loop stops.
 function M:Next()
 	local i = ns.char.stepIndex or 1
 	repeat
 		i = i + 1
 	until i > #activeSteps or not M:IsStepComplete(activeSteps[i])
-	ns.char.stepIndex = U.Clamp(i, 1, math.max(1, #activeSteps))
+	ns.char.stepIndex = math.max(1, math.min(i, #activeSteps + 1))
 	ns:SendMessage("ZENITH_STEP_CHANGED", ns.char.stepIndex, M:CurrentStep())
 end
 
@@ -162,23 +160,32 @@ function M:JumpTo(index)
 	ns:SendMessage("ZENITH_STEP_CHANGED", ns.char.stepIndex, M:CurrentStep())
 end
 
--- If the current step is already satisfied, walk forward to the next open one.
+-- If the current step is already satisfied, walk forward to the next open one
+-- (may park at #activeSteps+1 if the whole route is done).
 function M:AdvancePastCompleted()
 	local i = ns.char.stepIndex or 1
 	while i <= #activeSteps and M:IsStepComplete(activeSteps[i]) do
 		i = i + 1
 	end
-	ns.char.stepIndex = U.Clamp(i, 1, math.max(1, #activeSteps))
+	ns.char.stepIndex = math.max(1, math.min(i, #activeSteps + 1))
 end
 
 -- Re-check the current step against the world and auto-advance if satisfied.
 function M:Poll()
 	local step = M:CurrentStep()
 	if step and M:IsStepComplete(step) then
-		ns.char.completed[step.id] = true
+		local key = stepKey(step)
+		if key then ns.char.completed[key] = true end
 		ns:SendMessage("ZENITH_STEP_COMPLETED", ns.char.stepIndex, step)
 		M:Next()
 	end
+end
+
+-- Re-skip everything already done. Used after login once the quest-completion
+-- data is reliably available (it can read empty on the very first frame).
+function M:Resync()
+	M:AdvancePastCompleted()
+	ns:SendMessage("ZENITH_STEP_CHANGED", ns.char.stepIndex, M:CurrentStep())
 end
 
 function M:OnEnable()
@@ -190,6 +197,8 @@ function M:OnEnable()
 	U.RefreshQuestLog()
 	ns:On("PLAYER_LEVEL_UP", function() C_Timer.After(0.1, function() M:Poll() end) end)
 	ns:On("ZONE_CHANGED_NEW_AREA", function() M:Poll() end)
+	-- Quest-completion data can be empty on the first frame; resync shortly after.
+	ns:On("PLAYER_ENTERING_WORLD", function() C_Timer.After(2.0, function() M:Resync() end) end)
 	-- Coordinate arrival needs a periodic check.
 	C_Timer.NewTicker(1.0, function() M:Poll() end)
 end

@@ -36,8 +36,13 @@ end
 
 function M:ClearTarget() M:SetTarget(nil) end
 
--- Pull the current step's coords into the arrow.
+-- Pull the current step's coords into the arrow; if the current step has none
+-- (e.g. a "Travel to X" header), look ahead to the next objective with coords.
 function M:SyncFromStep(step)
+	if not (step and step.mapID and step.x and step.y) then
+		local se = ns:GetModule("StepEngine")
+		step = se and se.NextCoordStep and se:NextCoordStep() or nil
+	end
 	if step and step.mapID and step.x and step.y then
 		M:SetTarget(step.mapID, step.x, step.y, step.zone)
 	else

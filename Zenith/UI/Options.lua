@@ -34,6 +34,10 @@ function M:OnEnable()
 		{ "Talent point pop-ups", "Remind me where to spend points on level-up.",
 			function() return ns.account.showTalentPop end,
 			function(v) ns.account.showTalentPop = v end },
+		{ "Skip out-leveled (grey) quests", "Auto-skip quests far below your level.",
+			function() return ns.account.skipGrey end,
+			function(v) ns.account.skipGrey = v
+				if ns.GetModule and ns:GetModule("StepEngine") then ns:GetModule("StepEngine"):LoadRoute() end end },
 		{ "Lock frames", "Prevent dragging the window, arrow, and helper.",
 			function() return ns.account.locked end,
 			function(v) ns.account.locked = v end },

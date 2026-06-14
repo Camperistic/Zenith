@@ -56,11 +56,10 @@ local NPC_SPAWNS, OBJ_SPAWNS = 7, 4
 -- Resolve a creature/object id to a coordinate, preferring a spawn in `zoneArea`.
 local function firstSpawn(spawnTable, zoneArea)
 	if type(spawnTable) ~= "table" then return nil end
-	if zoneArea and spawnTable[zoneArea] and spawnTable[zoneArea][1] then
-		return zoneArea, spawnTable[zoneArea][1][1], spawnTable[zoneArea][1][2]
-	end
+	local z = zoneArea and spawnTable[zoneArea]
+	if z and z[1] and z[1][1] then return zoneArea, z[1][1], z[1][2] end
 	for aid, coords in pairs(spawnTable) do
-		if coords[1] then return aid, coords[1][1], coords[1][2] end
+		if coords[1] and coords[1][1] then return aid, coords[1][1], coords[1][2] end
 	end
 end
 
@@ -265,7 +264,7 @@ local function buildFaction(orderList, bits)
 			-- In a racial start zone, force the owner mask; elsewhere keep the quest's own.
 			local races = owner or ((q[Q.races] and q[Q.races] ~= 0) and q[Q.races] or nil)
 			steps[#steps + 1] = {
-				kind = "quest", zone = z.name, mapID = it.mapID,
+				kind = "quest", zone = z.name, mapID = it.mapID, qid = it.e.qid,
 				x = it.x and math.floor(it.x * 10 + 0.5) / 10 or nil,
 				y = it.y and math.floor(it.y * 10 + 0.5) / 10 or nil,
 				band = { reqL, lvl }, quest = q[Q.name], text = q[Q.name], detail = detail,
@@ -277,7 +276,13 @@ local function buildFaction(orderList, bits)
 end
 
 -- ── Serialize ─────────────────────────────────────────────────────────────────
-local function q(s) return "\"" .. tostring(s):gsub("\\", "\\\\"):gsub("\"", "\\\"") .. "\"" end
+-- Quote a string for a Lua source literal: escape backslash, quote, and any
+-- control chars (a literal newline/tab inside "..." is a Lua syntax error).
+local function q(s)
+	s = tostring(s):gsub("\\", "\\\\"):gsub("\"", "\\\"")
+		:gsub("\n", "\\n"):gsub("\r", "\\r"):gsub("\t", "\\t")
+	return "\"" .. s .. "\""
+end
 
 local function writeFaction(faction, steps)
 	local out = {}
@@ -288,6 +293,7 @@ local function writeFaction(faction, steps)
 	out[#out+1] = "ns.data.questRoute." .. faction .. " = {"
 	for _, s in ipairs(steps) do
 		local parts = { "kind=" .. q(s.kind), "zone=" .. q(s.zone) }
+		if s.qid then parts[#parts+1] = "qid=" .. s.qid end
 		if s.mapID then parts[#parts+1] = "mapID=" .. s.mapID end
 		if s.x then parts[#parts+1] = "x=" .. s.x end
 		if s.y then parts[#parts+1] = "y=" .. s.y end

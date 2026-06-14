@@ -2,6 +2,30 @@
 
 All notable changes to Zenith are documented here.
 
+## [0.5.0] — 2026-06-14
+
+Reliability & polish pass (informed by a full code review).
+
+### Added
+- **Reliable, locale-independent completion**: quest steps carry the Blizzard quest id
+  and use `IsQuestFlaggedCompleted`, so the route correctly auto-skips quests you finished
+  *before* installing — no more getting stuck on already-done quests.
+- **Grey-quest auto-skip**: quests far below your level are skipped automatically
+  (toggleable in options) so a mid-level character isn't sent backwards.
+- **Travel headers** auto-clear on zone arrival; the **arrow looks ahead** to the next
+  objective when the current step is a coordinate-less header.
+- "Route complete" end state.
+
+### Fixed
+- **End-of-route infinite loop**: the 1-second poll no longer re-fires completion events
+  forever after the last step; the cursor parks in a terminal state.
+- **Completion keys** are now keyed by quest id (not array position), so they survive
+  route-data updates instead of pointing at the wrong quest.
+- Color codes round RGB to integers (Lua 5.1 `%x` wants integers).
+- Login-timing **resync** so the first auto-skip pass runs once quest data is available.
+- Defensive nil-guards across the gear/pets/rotation panes.
+- Importer: escape control chars in emitted strings; validate spawn coordinate pairs.
+
 ## [0.4.1] — 2026-06-14
 
 ### Changed

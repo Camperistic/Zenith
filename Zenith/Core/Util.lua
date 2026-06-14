@@ -4,9 +4,10 @@ local ADDON_NAME, ns = ...
 local U = {}
 ns.U = U
 
--- Wrap text in a |cAARRGGBB...|r escape.
+-- Wrap text in a |cAARRGGBB...|r escape. (Round to ints — Lua 5.1 %x wants integers.)
 function U.Color(text, r, g, b)
-	return string.format("|cff%02x%02x%02x%s|r", r * 255, g * 255, b * 255, text)
+	return string.format("|cff%02x%02x%02x%s|r",
+		math.floor(r * 255 + 0.5), math.floor(g * 255 + 0.5), math.floor(b * 255 + 0.5), text)
 end
 
 function U.Accent(text)
@@ -65,6 +66,11 @@ function U.PlayerPosition()
 	local x, y = pos:GetXY()
 	if not x or x == 0 and y == 0 then return nil, nil, mapID end
 	return x * 100, y * 100, mapID
+end
+
+-- The uiMapID the player is currently on (nil if unavailable).
+function U.PlayerMapID()
+	return C_Map and C_Map.GetBestMapForUnit and C_Map.GetBestMapForUnit("player")
 end
 
 -- Map name from uiMapID.

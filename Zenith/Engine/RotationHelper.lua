@@ -60,7 +60,7 @@ end
 
 function M:Suggest()
 	local data = rotationData()
-	if not data then return nil end
+	if not data or not data.priority then return nil end
 	local ctx = context()
 	if not ctx.targetExists then return nil end
 	local list = data.priority
