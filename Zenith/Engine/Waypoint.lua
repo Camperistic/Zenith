@@ -18,6 +18,20 @@ function M:SetTarget(mapID, x, y, label)
 	if not (mapID and x and y) then target = nil
 	else target = { mapID = mapID, x = x, y = y, label = label } end
 	if arrow then arrow:SetShown(target ~= nil and ns.account.showArrow) end
+	M:UpdateTomTom()
+end
+
+-- Hand the waypoint to TomTom if the player has it (better world/minimap pins).
+function M:UpdateTomTom()
+	local TT = _G.TomTom
+	if not (TT and TT.AddWaypoint) then return end
+	if M._ttuid and TT.RemoveWaypoint then pcall(TT.RemoveWaypoint, TT, M._ttuid) end
+	M._ttuid = nil
+	if target and ns.account.useTomTom ~= false then
+		local ok, uid = pcall(TT.AddWaypoint, TT, target.mapID, target.x / 100, target.y / 100,
+			{ title = "Zenith: " .. (target.label or "step"), persistent = false, minimap = true, world = true })
+		if ok then M._ttuid = uid end
+	end
 end
 
 function M:ClearTarget() M:SetTarget(nil) end

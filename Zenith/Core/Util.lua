@@ -121,3 +121,53 @@ function U.TalentPath(groups)
 	end
 	return order
 end
+
+-- ── Quest-log tracking (title-based; locale enUS/enGB) ─────────────────────────
+-- We track quests by TITLE rather than hard-coding quest IDs, so the route data
+-- stays readable and we never ship a wrong ID. A small cache is rebuilt on
+-- QUEST_LOG_UPDATE. `seen` (persisted per-char) lets us detect turn-ins: a quest
+-- that was in the log and now isn't was almost certainly handed in.
+local qInLog, qDone = {}, {}
+
+function U.RefreshQuestLog()
+	wipe(qInLog); wipe(qDone)
+	local n = (C_QuestLog and C_QuestLog.GetNumQuestLogEntries and C_QuestLog.GetNumQuestLogEntries())
+		or (GetNumQuestLogEntries and GetNumQuestLogEntries()) or 0
+	for i = 1, n do
+		local title, isHeader, isComplete, qID
+		if C_QuestLog and C_QuestLog.GetInfo then
+			local info = C_QuestLog.GetInfo(i)
+			if info then
+				title, isHeader, qID = info.title, info.isHeader, info.questID
+				isComplete = info.isComplete
+				if not isComplete and qID and C_QuestLog.IsComplete then
+					isComplete = C_QuestLog.IsComplete(qID)
+				end
+			end
+		elseif GetQuestLogTitle then
+			local t, _, _, header, _, complete = GetQuestLogTitle(i)
+			title, isHeader, isComplete = t, header, (complete == 1 or complete == true)
+		end
+		if title and not isHeader then
+			local key = title:lower()
+			qInLog[key] = true
+			if isComplete then qDone[key] = true end
+			if ns.char and ns.char.seenQuests then ns.char.seenQuests[key] = true end
+		end
+	end
+end
+
+function U.QuestInLog(title)
+	return title and qInLog[title:lower()] == true
+end
+
+function U.QuestObjectivesDone(title)
+	return title and qDone[title:lower()] == true
+end
+
+-- Was the quest seen in the log earlier and is now gone? (turned in)
+function U.QuestTurnedIn(title)
+	if not title then return false end
+	local key = title:lower()
+	return ns.char and ns.char.seenQuests and ns.char.seenQuests[key] and not qInLog[key]
+end

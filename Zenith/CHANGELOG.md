@@ -2,6 +2,22 @@
 
 All notable changes to Zenith are documented here.
 
+## [0.3.0] — 2026-06-14
+
+### Added
+- **Quest-by-quest engine**: steps can be individual quests with per-quest waypoints
+  and automatic accept / objective / turn-in detection (tracked by quest title, so no
+  hard-coded IDs). `complete.level` fallbacks keep the list moving if a title/locale
+  doesn't match.
+- **Turn-by-turn route for Human 1–15** (Northshire → Elwynn → Westfall) as the worked
+  vertical slice on the new engine — the template other zones/races fill in against.
+- **TomTom integration**: if TomTom is installed, Zenith drives its world/minimap pins
+  (toggle via `useTomTom`). Built-in arrow still works without it.
+
+### Fixed
+- Race detection (`UnitRace`) was truncated by an `and`, so race-specific starts never
+  loaded. Now every race's intro (and detailed route) loads correctly.
+
 ## [0.2.0] — 2026-06-14
 
 ### Added

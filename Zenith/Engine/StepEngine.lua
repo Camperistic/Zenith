@@ -21,7 +21,8 @@ ns.StepEngine = M
 function M:LoadRoute()
 	wipe(activeSteps)
 	local faction = U.PlayerFaction()
-	local _, race = UnitRace and UnitRace("player")   -- token: "Human","Orc","Scourge"...
+	local race                                        -- token: "Human","Orc","Scourge"...
+	if UnitRace then local _; _, race = UnitRace("player") end
 	local spine = ns.data.route and ns.data.route[faction]
 	if not spine then return end
 
@@ -32,8 +33,24 @@ function M:LoadRoute()
 			activeSteps[#activeSteps + 1] = step
 		end
 	end
-	add(ns.data.starts and ns.data.starts[race], "start-" .. (race or "x"))
-	add(spine, "spine-" .. faction)
+	-- Turn-by-turn detailed early game (race-specific) if we have it; otherwise the
+	-- zone-level race intro. Either way, append the faction spine beyond the level
+	-- the head already covers.
+	local coverTo = 0
+	local detailed = ns.data.detailed and ns.data.detailed[race]
+	if detailed and detailed.steps then
+		add(detailed.steps, "det-" .. (race or "x"))
+		coverTo = detailed.coversTo or 0
+	else
+		add(ns.data.starts and ns.data.starts[race], "start-" .. (race or "x"))
+	end
+	for i, step in ipairs(spine) do
+		local skip = coverTo > 0 and step.band and step.band[2] and step.band[2] <= coverTo
+		if not skip then
+			step.id = step.id or ("spine-" .. faction .. "-" .. i)
+			activeSteps[#activeSteps + 1] = step
+		end
+	end
 
 	ns.char.stepIndex = U.Clamp(ns.char.stepIndex or 1, 1, math.max(1, #activeSteps))
 	-- Skip past anything already completed so a returning player resumes cleanly.
@@ -54,6 +71,19 @@ end
 function M:IsStepComplete(step)
 	if not step then return true end
 	if ns.char.completed[step.id] then return true end
+
+	-- Quest-title objective steps (turn-by-turn data).
+	if step.quest then
+		local title = step.quest
+		if step.kind == "accept" then
+			if U.QuestInLog(title) or U.QuestObjectivesDone(title) or U.QuestTurnedIn(title) then return true end
+		elseif step.kind == "turnin" then
+			if U.QuestTurnedIn(title) then return true end
+		else -- "quest"/"do": done when objectives complete or already handed in
+			if U.QuestObjectivesDone(title) or U.QuestTurnedIn(title) then return true end
+		end
+	end
+
 	local c = step.complete
 	if not c then return false end
 	if c.level and U.PlayerLevel() >= c.level then return true end
@@ -129,8 +159,10 @@ end
 function M:OnEnable()
 	M:LoadRoute()
 	-- Events that can satisfy a step.
-	ns:On("QUEST_TURNED_IN", function() M:Poll() end)
-	ns:On("QUEST_LOG_UPDATE", function() M:Poll() end)
+	ns:On("QUEST_TURNED_IN", function() U.RefreshQuestLog(); M:Poll() end)
+	ns:On("QUEST_LOG_UPDATE", function() U.RefreshQuestLog(); M:Poll() end)
+	ns:On("QUEST_ACCEPTED", function() U.RefreshQuestLog(); M:Poll() end)
+	U.RefreshQuestLog()
 	ns:On("PLAYER_LEVEL_UP", function() C_Timer.After(0.1, function() M:Poll() end) end)
 	ns:On("ZONE_CHANGED_NEW_AREA", function() M:Poll() end)
 	-- Coordinate arrival needs a periodic check.

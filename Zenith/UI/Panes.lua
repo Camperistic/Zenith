@@ -15,10 +15,14 @@ ns.PaneBuilders = {}
 local KIND = {
 	travel    = { "TRAVEL",  0.55, 0.75, 1.00 },
 	quest     = { "QUEST",   1.00, 0.82, 0.00 },
+	accept    = { "ACCEPT",  0.45, 0.86, 0.27 },
+	turnin    = { "TURN IN", 1.00, 0.70, 0.10 },
+	["do"]    = { "DO",      0.95, 0.85, 0.35 },
 	grind     = { "GRIND",   0.90, 0.55, 0.30 },
 	dungeon   = { "DUNGEON", 0.75, 0.45, 0.95 },
 	train     = { "TRAIN",   0.45, 0.86, 0.27 },
 	gear      = { "GEAR",    0.45, 0.86, 0.27 },
+	hearth    = { "HEARTH",  0.60, 0.80, 1.00 },
 	note      = { "NOTE",    0.70, 0.70, 0.70 },
 }
 local function kindTag(kind)

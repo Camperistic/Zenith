@@ -16,10 +16,15 @@ you're leveling *well*.
 
 ## Features
 
-- **Live leveling route (all races, both factions)** — per-race starting zones stitched
-  onto a shared Alliance/Horde spine (Azeroth 1–60 → Outland 58–70), with quest hubs,
-  level bands, and dungeon stops. Steps **auto-complete** by quest turn-in, level, or
-  arrival; `Done / Skip / Back` manually.
+- **Quest-by-quest guide + waypoints** — the engine supports true turn-by-turn steps
+  (accept → objective → turn-in) with a waypoint per quest and **automatic detection**
+  of accepting, completing objectives, and turning in (tracked by quest title — no
+  hard-coded IDs). Optional **TomTom** integration drives world/minimap pins.
+  *Worked slice shipped: Human 1–15 (Northshire → Elwynn → Westfall).*
+- **Full 1–70 coverage (all races, both factions)** — per-race starting zones stitched
+  onto a shared Alliance/Horde spine (Azeroth 1–60 → Outland 58–70). Currently a mix of
+  turn-by-turn (the early slice) and zone-level for the rest; both auto-advance.
+  `Done / Skip / Back` manually.
 - **All 9 classes coached** — Warrior (Arms), Paladin (Ret), Hunter (BM), Rogue (Combat),
   Priest (Shadow), Shaman (Enh), Mage (Frost), Warlock (Demo/Felguard), Druid (Feral):
   full 61-point leveling talent path + an in-combat rotation helper for each.
@@ -95,11 +100,13 @@ Talent path: **41 BM / 20 MM / 0 SV** ("leveling = endgame", no respec at 70).
 - [x] **All races / both factions** — race starts + shared faction spine
 - [x] **Beast Mastery Hunter** — full gear milestones, pre-raid BiS, pets (deepest slice)
 - [x] Release packaging (MIT, `.pkgmeta`, BigWigs packager → CurseForge / Wago / WoWInterface)
+- [x] **Quest-granular engine** (per-quest waypoints, accept/objective/turn-in auto-detect, TomTom)
+- [x] Turn-by-turn worked slice (Human 1–15)
+- [ ] **Fill turn-by-turn data for the rest of 1–70, all races** — the remaining content
+      effort. Hand-authoring matches RestedXP quality but is slow; importing an open quest
+      dataset (e.g. Questie's, with attribution) is the faster path. Same engine either way.
 - [ ] Detailed gear milestone + pre-raid BiS item lists for the other 8 classes
 - [ ] Secondary specs (MM/SV Hunter, Fire/Arcane Mage, Ele Shaman, etc.) and PvP paths
-- [ ] **Turn-by-turn quest steps** (true RestedXP granularity) with quest IDs — best done
-      by importing an open quest dataset (e.g. Questie's, with attribution) rather than
-      hand-authoring; this is the main remaining content gap.
 
 Contributions are data files — copy `Data/Classes/<Class>.lua` and fill in your spec.
 

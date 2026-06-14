@@ -48,7 +48,8 @@ function ns:GetModule(name) return self.modules[name] end
 -- ---------------------------------------------------------------------------
 ns.data = {
 	route     = {},   -- [faction] = { steps... }        (class-agnostic spine)
-	starts    = {},   -- [raceToken] = { steps... }       (1–~12 race intro)
+	starts    = {},   -- [raceToken] = { steps... }       (1–~12 race intro, zone-level)
+	detailed  = {},   -- [raceToken] = { coversTo=N, steps={...} }  turn-by-turn early game
 	talents   = {},   -- [class] = { [specKey] = { order... } }
 	gear      = {},   -- [class] = { milestones..., preraid... }
 	rotations = {},   -- [class] = { [specKey] = { ... } }
@@ -64,6 +65,7 @@ ns.defaults = {
 		locked        = false,
 		scale         = 1.0,
 		showArrow     = true,
+		useTomTom     = true,
 		showRotation  = true,
 		showTalentPop = true,
 		minimap       = { hide = false, angle = 215 },
@@ -72,10 +74,9 @@ ns.defaults = {
 		rotationPoint = nil,
 	},
 	char = {
-		routeKey      = nil,    -- "Hunter"
 		stepIndex     = 1,      -- current step in the route
 		completed     = {},     -- [stepId] = true (manual/auto completion)
-		skippedTalents = {},
+		seenQuests    = {},     -- [questTitleLower] = true (for turn-in detection)
 	},
 }
 
