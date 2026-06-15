@@ -25,12 +25,15 @@ local function context()
 	local powerType = Enum and Enum.PowerType and Enum.PowerType.Mana or 0
 	local mana = UnitPowerMax("player", powerType)
 	mana = (mana > 0) and (UnitPower("player", powerType) / mana) or 1
+	local thp = UnitHealthMax("target")
+	thp = (thp > 0) and (UnitHealth("target") / thp) or 1
 	return {
 		level       = U.PlayerLevel(),
 		mana        = mana,
 		petActive   = UnitExists("pet") and not UnitIsDead("pet"),
 		lastCrit    = (GetTime() - lastRangedCrit) < 5,
 		targetExists= UnitExists("target") and UnitCanAttack("player", "target"),
+		targetHP    = thp,
 	}
 end
 
@@ -57,7 +60,7 @@ end
 
 function M:Suggest()
 	local data = rotationData()
-	if not data then return nil end
+	if not data or not data.priority then return nil end
 	local ctx = context()
 	if not ctx.targetExists then return nil end
 	local list = data.priority

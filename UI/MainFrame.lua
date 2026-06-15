@@ -164,10 +164,22 @@ function M:OnEnable()
 			ns:GetModule("Waypoint"):Refresh(); ns:Print("Arrow " .. (ns.account.showArrow and "on" or "off"))
 		elseif msg == "rotation" or msg == "dps" then ns.account.showRotation = not ns.account.showRotation
 			ns:Print("Rotation helper " .. (ns.account.showRotation and "on" or "off"))
+		elseif msg == "config" or msg == "options" then ns:GetModule("Options"):Open()
 		elseif msg == "reset" then ns.char.stepIndex = 1; wipe(ns.char.completed)
 			ns:GetModule("StepEngine"):LoadRoute(); ns:Print("Route progress reset.")
 		elseif msg == "next" then ns:GetModule("StepEngine"):Next()
 		elseif msg == "prev" then ns:GetModule("StepEngine"):Prev()
+		elseif msg == "help" or msg == "?" then
+			ns:Print("commands: |cff73db45/zen|r toggle · next · prev · arrow · rotation · config · lock · unlock · reset")
 		else M:Toggle() end
 	end
+
+	-- One-line orientation the first time the player logs in with Zenith.
+	C_Timer.After(3, function()
+		local se = ns:GetModule("StepEngine")
+		local step = se and se:CurrentStep()
+		local where = step and (" — next: " .. (step.zone or "")) or ""
+		ns:Print(("v%s loaded. |cff73db45/zenith|r to toggle, |cff73db45/zen help|r for commands.%s")
+			:format(ns.VERSION, where))
+	end)
 end

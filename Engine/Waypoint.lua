@@ -15,21 +15,47 @@ local arrow                     -- the frame
 local target                    -- { mapID, x, y, label }
 
 function M:SetTarget(mapID, x, y, label)
-	if not (mapID and x and y) then target = nil
-	else target = { mapID = mapID, x = x, y = y, label = label } end
+	-- No-op if unchanged (avoids TomTom add/remove churn on every QUEST_LOG_UPDATE).
+	if target and mapID and target.mapID == mapID and target.x == x and target.y == y then return end
+	if not (mapID and x and y) then
+		if not target then return end
+		target = nil
+	else
+		target = { mapID = mapID, x = x, y = y, label = label }
+	end
 	if arrow then arrow:SetShown(target ~= nil and ns.account.showArrow) end
+	M:UpdateTomTom()
+end
+
+-- Hand the waypoint to TomTom if the player has it (better world/minimap pins).
+function M:UpdateTomTom()
+	local TT = _G.TomTom
+	if not (TT and TT.AddWaypoint) then return end
+	if M._ttuid and TT.RemoveWaypoint then pcall(TT.RemoveWaypoint, TT, M._ttuid) end
+	M._ttuid = nil
+	if target and ns.account.useTomTom ~= false then
+		local ok, uid = pcall(TT.AddWaypoint, TT, target.mapID, target.x / 100, target.y / 100,
+			{ title = "Zenith: " .. (target.label or "step"), persistent = false, minimap = true, world = true })
+		if ok then M._ttuid = uid end
+	end
 end
 
 function M:ClearTarget() M:SetTarget(nil) end
 
--- Pull the current step's coords into the arrow.
-function M:SyncFromStep(step)
-	if step and step.mapID and step.x and step.y then
-		M:SetTarget(step.mapID, step.x, step.y, step.zone)
+-- Point the arrow using the batch-aware "questing loop" planner (accept nearby
+-- quests → do their objectives → loop back to turn them all in).
+function M:Resync()
+	local se = ns:GetModule("StepEngine")
+	local mapID, x, y, label = se and se.NextWaypoint and se:NextWaypoint()
+	if mapID and x and y then
+		M:SetTarget(mapID, x, y, label)
 	else
 		M:ClearTarget()
 	end
 end
+
+-- Kept for STEP_CHANGED hooks (and unit tests); both just re-plan.
+function M:SyncFromStep() M:Resync() end
 
 local function buildArrow()
 	local f = CreateFrame("Frame", "ZenithArrow", UIParent)
@@ -66,6 +92,10 @@ local function buildArrow()
 	else f:SetPoint("CENTER", UIParent, "CENTER", 0, 150) end
 
 	f:SetScript("OnUpdate", function(self, elapsed)
+		-- Re-plan a couple of times a second so "nearest in the batch" tracks movement.
+		self.rt = (self.rt or 0) + elapsed
+		if self.rt >= 1.0 then self.rt = 0; M:Resync() end
+
 		self.t = (self.t or 0) + elapsed
 		if self.t < 0.03 then return end   -- ~30fps is plenty
 		self.t = 0
@@ -106,7 +136,8 @@ function M:OnEnable()
 	arrow = buildArrow()
 	arrow:Hide()
 	ns:RegisterMessage("ZENITH_STEP_CHANGED", function(_, _, step) M:SyncFromStep(step) end)
-	-- prime with whatever step is current
+	-- Re-evaluate when quest objectives change (arrow flips giver → turn-in).
 	local se = ns:GetModule("StepEngine")
+	ns:On("QUEST_LOG_UPDATE", function() if se then M:SyncFromStep(se:CurrentStep()) end end)
 	if se then M:SyncFromStep(se:CurrentStep()) end
 end

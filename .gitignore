@@ -1,0 +1,14 @@
+# Build output
+/.release/
+*.zip
+
+# Editor / OS cruft
+.DS_Store
+Thumbs.db
+*.swp
+*~
+.idea/
+.vscode/
+
+# Lua bytecode
+*.luac

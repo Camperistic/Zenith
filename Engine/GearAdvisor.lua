@@ -20,7 +20,7 @@ function M:CurrentMilestone()
 	if not data then return nil end
 	local level = U.PlayerLevel()
 	local best
-	for _, ms in ipairs(data.milestones) do
+	for _, ms in ipairs(data.milestones or {}) do
 		if level <= ms.level then return ms end   -- next thing to aim for
 		best = ms
 	end
@@ -34,11 +34,11 @@ local function check()
 	local data = gearData()
 	if not data then return end
 	local level = U.PlayerLevel()
-	for _, ms in ipairs(data.milestones) do
+	for _, ms in ipairs(data.milestones or {}) do
 		if level == ms.level and not notified[ms.level] then
 			notified[ms.level] = true
 			ns:Print("Gear check — " .. U.Gold(ms.title))
-			for _, it in ipairs(ms.items) do
+			for _, it in ipairs(ms.items or {}) do
 				ns:Print("   • " .. U.Accent(it.name) .. " (" .. it.slot .. ") — " .. (it.note or ""))
 			end
 		end

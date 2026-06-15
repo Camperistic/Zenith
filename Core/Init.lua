@@ -47,7 +47,7 @@ function ns:GetModule(name) return self.modules[name] end
 -- Data registries — Data/* files populate these tables at load time.
 -- ---------------------------------------------------------------------------
 ns.data = {
-	routes    = {},   -- [class] = { [faction] = { steps... } }
+	questRoute = {},  -- [faction] = { quest steps... }    (generated from Questie DB)
 	talents   = {},   -- [class] = { [specKey] = { order... } }
 	gear      = {},   -- [class] = { milestones..., preraid... }
 	rotations = {},   -- [class] = { [specKey] = { ... } }
@@ -63,18 +63,19 @@ ns.defaults = {
 		locked        = false,
 		scale         = 1.0,
 		showArrow     = true,
+		useTomTom     = true,
 		showRotation  = true,
 		showTalentPop = true,
+		skipGrey      = true,    -- auto-skip out-leveled (grey) quests
 		minimap       = { hide = false, angle = 215 },
 		framePoint    = nil,   -- saved main-window position
 		arrowPoint    = nil,
 		rotationPoint = nil,
 	},
 	char = {
-		routeKey      = nil,    -- "Hunter"
 		stepIndex     = 1,      -- current step in the route
 		completed     = {},     -- [stepId] = true (manual/auto completion)
-		skippedTalents = {},
+		seenQuests    = {},     -- [questTitleLower] = true (for turn-in detection)
 	},
 }
 
@@ -164,12 +165,6 @@ ns:On("ADDON_LOADED", function(_, name)
 	ZenithCharDB = ZenithCharDB or {}
 	ns.account = copyInto(ZenithDB, ns.defaults.account)
 	ns.char    = copyInto(ZenithCharDB, ns.defaults.char)
-
-	-- Default the route to the player's class if we have data for it.
-	local _, classFile = UnitClass("player")
-	if not ns.char.routeKey and ns.data.routes[classFile] then
-		ns.char.routeKey = classFile
-	end
 
 	for _, m in ipairs(moduleOrder) do
 		if m.OnLoad then pcall(m.OnLoad, m) end

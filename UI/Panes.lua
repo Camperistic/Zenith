@@ -15,10 +15,14 @@ ns.PaneBuilders = {}
 local KIND = {
 	travel    = { "TRAVEL",  0.55, 0.75, 1.00 },
 	quest     = { "QUEST",   1.00, 0.82, 0.00 },
+	accept    = { "ACCEPT",  0.45, 0.86, 0.27 },
+	turnin    = { "TURN IN", 1.00, 0.70, 0.10 },
+	["do"]    = { "DO",      0.95, 0.85, 0.35 },
 	grind     = { "GRIND",   0.90, 0.55, 0.30 },
 	dungeon   = { "DUNGEON", 0.75, 0.45, 0.95 },
 	train     = { "TRAIN",   0.45, 0.86, 0.27 },
 	gear      = { "GEAR",    0.45, 0.86, 0.27 },
+	hearth    = { "HEARTH",  0.60, 0.80, 1.00 },
 	note      = { "NOTE",    0.70, 0.70, 0.70 },
 }
 local function kindTag(kind)
@@ -94,8 +98,15 @@ ns.PaneBuilders.Guide = function(pane)
 		local total = SE:Count()
 		local step = SE:CurrentStep()
 		if not step then
-			progress:SetText("No route data for this class yet.")
-			curText:SetText("")
+			curTag:SetText("")
+			curDetail:SetText("")
+			if total > 0 then           -- walked past the final step
+				progress:SetText(U.Accent("Route complete — congratulations, 70!"))
+				curText:SetText("Every quest on the route is done. Hit the Gear tab for pre-raid targets.")
+			else
+				progress:SetText("No route data for your faction.")
+				curText:SetText("")
+			end
 			scroll:Set("")
 			return
 		end
@@ -105,14 +116,16 @@ ns.PaneBuilders.Guide = function(pane)
 		curText:SetText(step.text or "")
 		curDetail:SetText(step.detail or "")
 
-		-- next few steps
+		-- next few INCOMPLETE steps (skip done/grey so the list stays relevant)
 		local lines = {}
-		for i = idx + 1, math.min(total, idx + 8) do
+		local i = idx + 1
+		while i <= total and #lines < 7 do
 			local s = SE:StepAt(i)
-			if s then
+			if s and not SE:IsStepComplete(s) then
 				lines[#lines + 1] = string.format("%s  %s %s",
 					kindTag(s.kind), U.Dim(s.zone or ""), s.text or "")
 			end
+			i = i + 1
 		end
 		scroll:Set(#lines > 0 and table.concat(lines, "\n\n") or U.Dim("Route complete — congratulations, 70!"))
 	end
@@ -191,7 +204,7 @@ ns.PaneBuilders.Gear = function(pane)
 
 		-- pet tip for current band
 		local pets = ns.data.pets[U.PlayerClass()]
-		if pets then
+		if pets and pets.phases then
 			local lvl = U.PlayerLevel()
 			for _, ph in ipairs(pets.phases) do
 				if lvl <= ph.band[2] then
@@ -201,7 +214,7 @@ ns.PaneBuilders.Gear = function(pane)
 			end
 		end
 
-		if GA:IsMaxLevel() then
+		if GA:IsMaxLevel() and data.preraid then
 			out[#out+1] = "\n" .. U.Gold("PRE-RAID BiS (fresh 70)")
 			for _, it in ipairs(data.preraid) do
 				out[#out+1] = string.format("%s %s  %s", U.Accent("•"),
@@ -211,16 +224,18 @@ ns.PaneBuilders.Gear = function(pane)
 			local ms = GA:CurrentMilestone()
 			if ms then
 				out[#out+1] = "\n" .. U.Gold("CHASE NOW — " .. ms.title)
-				for _, it in ipairs(ms.items) do
+				for _, it in ipairs(ms.items or {}) do
 					out[#out+1] = string.format("%s %s  %s", U.Accent("•"),
 						it.name .. U.Dim(" ("..it.slot..")"), U.Dim("— " .. (it.note or "")))
 				end
 			end
-			out[#out+1] = "\n" .. U.Dim("Full pre-raid BiS list unlocks at level 70.")
+			if data.preraid then
+				out[#out+1] = "\n" .. U.Dim("Full pre-raid BiS list unlocks at level 70.")
+			end
 		end
 
 		out[#out+1] = "\n" .. U.Gold("NOTES")
-		for _, n in ipairs(data.notes) do out[#out+1] = "• " .. n end
+		for _, n in ipairs(data.notes or {}) do out[#out+1] = "• " .. n end
 		scroll:Set(table.concat(out, "\n"))
 	end
 end
@@ -233,11 +248,19 @@ ns.PaneBuilders.Help = function(pane)
 		local rot = ns.data.rotations[U.PlayerClass()]
 		rot = rot and rot[rot.default or "BM"]
 		if rot then
-			out[#out+1] = U.Gold("ROTATION — openers")
-			for _, o in ipairs(rot.openers) do out[#out+1] = "• " .. o end
-			out[#out+1] = "\n" .. U.Gold("ASPECTS / MANA")
-			for _, a in ipairs(rot.aspects) do out[#out+1] = "• " .. a end
-			out[#out+1] = "\n" .. U.Dim("The on-screen helper suggests your next shot in combat.")
+			if rot.openers then
+				out[#out+1] = U.Gold("ROTATION — openers")
+				for _, o in ipairs(rot.openers) do out[#out+1] = "• " .. o end
+			end
+			if rot.aspects then
+				out[#out+1] = "\n" .. U.Gold("ASPECTS / MANA")
+				for _, a in ipairs(rot.aspects) do out[#out+1] = "• " .. a end
+			end
+			if rot.notes then
+				out[#out+1] = "\n" .. U.Gold("NOTES")
+				for _, a in ipairs(rot.notes) do out[#out+1] = "• " .. a end
+			end
+			out[#out+1] = "\n" .. U.Dim("The on-screen helper suggests your next ability in combat.")
 		end
 		out[#out+1] = "\n" .. U.Gold("COMMANDS")
 		out[#out+1] = "/zenith — toggle window      /zen next | prev"
@@ -245,8 +268,9 @@ ns.PaneBuilders.Help = function(pane)
 		out[#out+1] = "/zen rotation — toggle DPS helper"
 		out[#out+1] = "/zen lock | unlock — move frames"
 		out[#out+1] = "/zen reset — restart route progress"
-		out[#out+1] = "\n" .. U.Gold("SOURCES")
-		out[#out+1] = U.Dim("Wowhead, Icy-Veins, Warcraft Tavern, wowtbc.gg — TBC Classic BM Hunter guides. See README.")
+		out[#out+1] = "\n" .. U.Gold("SOURCES & CREDITS")
+		out[#out+1] = U.Dim("Class data: Wowhead, Icy-Veins, Warcraft Tavern, wowtbc.gg.")
+		out[#out+1] = U.Dim("Quest route data generated from the Questie project's open database. See README.")
 		scroll:Set(table.concat(out, "\n"))
 	end
 end
