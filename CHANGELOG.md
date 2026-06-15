@@ -2,6 +2,17 @@
 
 All notable changes to Zenith are documented here.
 
+## [1.1.0] — 2026-06-15
+
+New features (toward "better than RestedXP + Questie"):
+
+### Added
+- **Leveling tracker + Stats tab**: per-level time splits, total active played time,
+  and a live "ETA to next ding" from your current XP rate.
+- **Live objective progress** in the Guide: while a quest is in your log, the current
+  step shows its objectives with live x/y counts (green when finished), refreshing on
+  quest-log changes.
+
 ## [1.0.2] — 2026-06-15
 
 More in-game fixes.

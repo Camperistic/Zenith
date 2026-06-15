@@ -30,6 +30,23 @@ local function kindTag(kind)
 	return string.format("|cff%02x%02x%02x[%s]|r", k[2] * 255, k[3] * 255, k[4] * 255, k[1])
 end
 
+-- Live objective lines for a quest in the log ("0/8 Goretusk Liver"), coloured
+-- green when finished. Returns a single string or nil if not in log / no API.
+local function liveObjectives(qid)
+	if not qid or not (C_QuestLog and C_QuestLog.GetQuestObjectives) then return nil end
+	local idx = C_QuestLog.GetLogIndexForQuestID and C_QuestLog.GetLogIndexForQuestID(qid)
+	if not idx then return nil end                 -- quest not in the log
+	local objs = C_QuestLog.GetQuestObjectives(qid)
+	if not objs or #objs == 0 then return nil end
+	local lines = {}
+	for _, o in ipairs(objs) do
+		if o.text and o.text ~= "" then
+			lines[#lines + 1] = (o.finished and "|cff40c040" .. o.text .. "|r") or ("• " .. o.text)
+		end
+	end
+	return #lines > 0 and table.concat(lines, "\n") or nil
+end
+
 -- Reusable vertical-scrolling text region.
 local function makeScroll(parent, bottomInset)
 	local sf = CreateFrame("ScrollFrame", nil, parent, "UIPanelScrollFrameTemplate")
@@ -73,6 +90,10 @@ ns.PaneBuilders.Guide = function(pane)
 	curDetail:SetPoint("TOPLEFT", curText, "BOTTOMLEFT", 0, -4)
 	curDetail:SetPoint("RIGHT", card, "RIGHT", -8, 0); curDetail:SetJustifyH("LEFT"); curDetail:SetWordWrap(true)
 	curDetail:SetTextColor(0.78, 0.78, 0.78)
+	-- live objective progress (x/y from the quest log)
+	local curObj = card:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+	curObj:SetPoint("TOPLEFT", curDetail, "BOTTOMLEFT", 0, -3)
+	curObj:SetPoint("RIGHT", card, "RIGHT", -8, 0); curObj:SetJustifyH("LEFT"); curObj:SetWordWrap(true)
 
 	-- Buttons
 	local back = CreateFrame("Button", nil, pane, "UIPanelButtonTemplate")
@@ -115,6 +136,7 @@ ns.PaneBuilders.Guide = function(pane)
 		curTag:SetText(kindTag(step.kind))
 		curText:SetText(step.text or "")
 		curDetail:SetText(step.detail or "")
+		curObj:SetText(liveObjectives(step.qid) or "")   -- live x/y while quest is in log
 
 		-- next few INCOMPLETE steps (skip done/grey so the list stays relevant)
 		local lines = {}
@@ -271,6 +293,36 @@ ns.PaneBuilders.Help = function(pane)
 		out[#out+1] = "\n" .. U.Gold("SOURCES & CREDITS")
 		out[#out+1] = U.Dim("Class data: Wowhead, Icy-Veins, Warcraft Tavern, wowtbc.gg.")
 		out[#out+1] = U.Dim("Quest route data generated from the Questie project's open database. See README.")
+		scroll:Set(table.concat(out, "\n"))
+	end
+end
+
+-- ════════════════════════════════ STATS ═══════════════════════════════════════
+ns.PaneBuilders.Stats = function(pane)
+	local LT = ns:GetModule("LevelTracker")
+	local scroll = makeScroll(pane)
+	function pane:Refresh()
+		if not LT then scroll:Set("Tracker unavailable."); return end
+		local lvl = U.PlayerLevel()
+		local out = {}
+		out[#out+1] = U.Accent("Total played (active): ") .. LT:Format(LT:ActiveSeconds())
+		out[#out+1] = U.Accent("Level: ") .. lvl
+
+		local cur = LT:LevelDuration(lvl)
+		if cur then out[#out+1] = U.Accent("This level: ") .. LT:Format(cur) end
+		local eta = LT:ETANextLevel()
+		if eta then out[#out+1] = U.Accent("ETA to ding: ") .. U.Gold("~" .. LT:Format(eta)) end
+
+		out[#out+1] = "\n" .. U.Gold("LEVEL SPLITS")
+		local any = false
+		for L = math.max(2, lvl - 11), lvl do
+			local d = LT:LevelDuration(L - 1)
+			if d then
+				any = true
+				out[#out+1] = string.format("L%d → %d   %s", L - 1, L, LT:Format(d))
+			end
+		end
+		if not any then out[#out+1] = U.Dim("Level up while Zenith is loaded to start tracking splits.") end
 		scroll:Set(table.concat(out, "\n"))
 	end
 end

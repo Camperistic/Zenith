@@ -78,6 +78,7 @@ ns.defaults = {
 		stepIndex     = 1,      -- current step in the route
 		completed     = {},     -- [stepId] = true (manual/auto completion)
 		seenQuests    = {},     -- [questTitleLower] = true (for turn-in detection)
+		tracker       = { splits = {}, activeTotal = 0 },  -- leveling time tracker
 	},
 }
 

@@ -78,14 +78,14 @@ local function buildChrome()
 end
 
 -- ── tabs ──────────────────────────────────────────────────────────────────────
-local TAB_ORDER = { "Guide", "Talents", "Gear", "Help" }
+local TAB_ORDER = { "Guide", "Talents", "Gear", "Stats", "Help" }
 
 local function buildTabs(f)
 	tabs = {}
-	local x = 8
+	local x = 6
 	for _, name in ipairs(TAB_ORDER) do
 		local b = CreateFrame("Button", nil, f)
-		b:SetSize(82, 22)
+		b:SetSize(67, 22)
 		b:SetPoint("TOPLEFT", x, -32)
 		local label = b:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
 		label:SetAllPoints(); label:SetText(name)
@@ -95,7 +95,7 @@ local function buildTabs(f)
 		b.underline = underline
 		b:SetScript("OnClick", function() M:SelectTab(name) end)
 		tabs[name] = b
-		x = x + 86
+		x = x + 70
 	end
 end
 
@@ -152,7 +152,16 @@ function M:OnEnable()
 	ns:RegisterMessage("ZENITH_STEP_COMPLETED",function() M:RefreshActive() end)
 	ns:RegisterMessage("ZENITH_ROUTE_LOADED",  function() M:RefreshActive() end)
 	ns:RegisterMessage("ZENITH_TALENT_AVAILABLE", function() M:RefreshActive() end)
+	ns:RegisterMessage("ZENITH_LEVEL_TRACKED", function() M:RefreshActive() end)
 	ns:On("PLAYER_LEVEL_UP", function() C_Timer.After(0.3, function() M:RefreshActive() end) end)
+	-- Live objective progress: refresh the visible pane on quest-log changes (throttled).
+	local qlu = 0
+	ns:On("QUEST_LOG_UPDATE", function()
+		local now = GetTime()
+		if now - qlu < 0.5 then return end
+		qlu = now
+		M:RefreshActive()
+	end)
 
 	-- Slash commands.
 	SLASH_ZENITH1, SLASH_ZENITH2 = "/zenith", "/zen"
