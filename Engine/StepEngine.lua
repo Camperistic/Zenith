@@ -40,10 +40,10 @@ function M:LoadRoute()
 	end
 
 	ns.char.stepIndex = U.Clamp(ns.char.stepIndex or 1, 1, math.max(1, #activeSteps))
-	-- Skip past anything already completed so a returning player resumes cleanly.
-	M:AdvancePastCompleted()
+	-- Position the cursor where the player actually is (forward past finished work,
+	-- backward if a stale/ahead cursor was saved).
+	M:Resync()
 	ns:SendMessage("ZENITH_ROUTE_LOADED")
-	ns:SendMessage("ZENITH_STEP_CHANGED", ns.char.stepIndex, M:CurrentStep())
 end
 
 function M:Steps() return activeSteps end
@@ -280,22 +280,47 @@ function M:Poll()
 	end
 end
 
--- Re-skip everything already done. Used after login once the quest-completion
--- data is reliably available (it can read empty on the very first frame).
+local AHEAD_GAP = 3   -- a step needing more than this many levels above you is "ahead"
+
+-- First step you can actually work right now, scanning from the top: not complete,
+-- not grey, and not far above your level. Used to position the cursor.
+function M:FirstActionable()
+	local lvl = U.PlayerLevel()
+	local fallback
+	for i = 1, #activeSteps do
+		local s = activeSteps[i]
+		if not M:IsStepComplete(s) then
+			fallback = fallback or i
+			local tooHigh = s.band and s.band[1] and s.band[1] > lvl + AHEAD_GAP
+			if not tooHigh then return i end
+		end
+	end
+	return fallback or (#activeSteps + 1)
+end
+
+-- Position the cursor on where you actually are. Advances forward past anything
+-- finished, AND corrects backward if the cursor has run ahead of your level
+-- (e.g. a stale saved position, or a high-level quest sorted into a low zone).
 function M:Resync()
-	M:AdvancePastCompleted()
+	local lvl = U.PlayerLevel()
+	local cur = M:CurrentStep()
+	local ranAhead = cur and cur.band and cur.band[1] and cur.band[1] > lvl + AHEAD_GAP
+	if not cur or ranAhead or M:IsStepComplete(cur) then
+		ns.char.stepIndex = M:FirstActionable()
+	end
 	ns:SendMessage("ZENITH_STEP_CHANGED", ns.char.stepIndex, M:CurrentStep())
 end
 
 function M:OnEnable()
 	M:LoadRoute()
 	-- Events that can satisfy a step.
-	ns:On("QUEST_TURNED_IN", function() U.RefreshQuestLog(); M:Poll() end)
+	ns:On("QUEST_TURNED_IN", function() U.RefreshQuestLog(); M:Resync() end)
 	ns:On("QUEST_LOG_UPDATE", function() U.RefreshQuestLog(); M:Poll() end)
 	ns:On("QUEST_ACCEPTED", function() U.RefreshQuestLog(); M:Poll() end)
 	U.RefreshQuestLog()
-	ns:On("PLAYER_LEVEL_UP", function() C_Timer.After(0.1, function() M:Poll() end) end)
-	ns:On("ZONE_CHANGED_NEW_AREA", function() M:Poll() end)
+	-- Level-up and zone changes re-anchor the cursor to where you actually are.
+	ns:On("PLAYER_LEVEL_UP", function() C_Timer.After(0.2, function() M:Resync() end) end)
+	ns:On("ZONE_CHANGED_NEW_AREA", function() M:Resync() end)
 	-- Quest-completion data can be empty on the first frame; resync shortly after.
 	ns:On("PLAYER_ENTERING_WORLD", function() C_Timer.After(2.0, function() M:Resync() end) end)
 	-- Coordinate arrival needs a periodic check.

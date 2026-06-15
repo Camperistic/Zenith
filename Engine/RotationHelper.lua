@@ -11,6 +11,13 @@ local ADDON_NAME, ns = ...
 local U = ns.U
 local M = ns:NewModule("RotationHelper")
 
+-- Spell APIs differ across client versions; resolve once and bail gracefully if
+-- the expected globals aren't present (so we never error every frame).
+local IsUsableSpell = _G.IsUsableSpell
+local GetSpellCooldown = _G.GetSpellCooldown
+local GetSpellTexture = _G.GetSpellTexture or (C_Spell and C_Spell.GetSpellTexture)
+local API_OK = type(IsUsableSpell) == "function" and type(GetSpellCooldown) == "function"
+
 local frame
 local lastRangedCrit = 0      -- GetTime() of last player ranged crit (for Kill Command)
 
@@ -59,6 +66,7 @@ local function isReady(entry, ctx)
 end
 
 function M:Suggest()
+	if not API_OK then return nil end
 	local data = rotationData()
 	if not data or not data.priority then return nil end
 	local ctx = context()
@@ -128,7 +136,7 @@ local function buildFrame()
 end
 
 function M:OnEnable()
-	if not rotationData() then return end
+	if not rotationData() or not API_OK then return end   -- no data / unsupported client APIs
 	frame = buildFrame()
 	frame:Hide()
 	-- Track player ranged crits to enable Kill Command suggestions.

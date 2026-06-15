@@ -83,7 +83,7 @@ ns.PaneBuilders.Guide = function(pane)
 	done:SetScript("OnClick", function() SE:CompleteStep() end)
 	local skip = CreateFrame("Button", nil, pane, "UIPanelButtonTemplate")
 	skip:SetSize(58, 20); skip:SetPoint("LEFT", done, "RIGHT", 6, 0); skip:SetText("Skip ▷")
-	skip:SetScript("OnClick", function() SE:Next() end)
+	skip:SetScript("OnClick", function() SE:CompleteStep() end)   -- persist the skip
 
 	local upcomingLabel = pane:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
 	upcomingLabel:SetPoint("TOPLEFT", back, "BOTTOMLEFT", 0, -8); upcomingLabel:SetText(U.Dim("UP NEXT"))
