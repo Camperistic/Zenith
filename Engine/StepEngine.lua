@@ -64,19 +64,27 @@ function M:NextCoordStep()
 	end
 end
 
--- Where the arrow should point for a step: the turn-in NPC once the quest's
--- objectives are complete, otherwise the giver; for coordinate-less headers,
--- look ahead to the next objective. Returns mapID, x, y, label, isTurnIn.
+-- Where the arrow should point for a step, stepping through the quest's life:
+--   not accepted        → the giver
+--   accepted, working   → the objective area (where to do it)
+--   objectives complete → the turn-in NPC
+-- Coordinate-less headers look ahead to the next objective.
+-- Returns mapID, x, y, label, stage.
 function M:WaypointFor(step)
 	if not step then return nil end
-	if step.qid and step.tmap and step.tx and step.ty and U.QuestReadyToTurnIn(step.qid) then
-		return step.tmap, step.tx, step.ty, (step.zone or "") .. " (turn in)", true
+	if step.qid then
+		if step.tmap and step.tx and step.ty and U.QuestReadyToTurnIn(step.qid) then
+			return step.tmap, step.tx, step.ty, (step.zone or "") .. " (turn in)", "turnin"
+		end
+		if step.omap and step.ox and step.oy and U.IsQuestInLog(step.qid) then
+			return step.omap, step.ox, step.oy, (step.zone or "") .. " (do)", "objective"
+		end
 	end
 	if step.mapID and step.x and step.y then
-		return step.mapID, step.x, step.y, step.zone, false
+		return step.mapID, step.x, step.y, step.zone, "giver"
 	end
 	local s = M:NextCoordStep()
-	if s then return s.mapID, s.x, s.y, s.zone, false end
+	if s then return s.mapID, s.x, s.y, s.zone, "giver" end
 end
 
 local GREY_GAP = 6   -- a quest this many levels below you is trivial → auto-skip

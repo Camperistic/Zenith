@@ -1,19 +1,15 @@
 # BigWigs packager config — https://github.com/BigWigsMods/packager
-# Packages the Zenith/ folder as the addon for CurseForge / Wago / WoWInterface.
+# The addon lives at the repo root (Zenith.toc here), packaged as "Zenith".
 package-as: Zenith
 
 enable-nolib-creation: no
 
-move-folders:
-  Zenith: Zenith
-
 ignore:
-  - README.md
-  - LICENSE
+  - tools
   - .github
   - .pkgmeta
-  - tools
+  - .gitignore
 
 manual-changelog:
-  filename: Zenith/CHANGELOG.md
+  filename: CHANGELOG.md
   markup-type: markdown

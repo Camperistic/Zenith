@@ -2,6 +2,19 @@
 
 All notable changes to Zenith are documented here.
 
+## [0.7.0] — 2026-06-15
+
+### Added
+- **Three-stage waypoint progression** per quest: the arrow points at the **giver**
+  until you accept, the **objective area** while you're working it, then the **turn-in
+  NPC** once objectives are complete. Objective coordinates come from Questie's objective
+  data (mob/object spawns and exploration triggers).
+
+### Changed (packaging — now Wago-publishable)
+- **Restructured the addon to the repo root** (`Zenith.toc` at root) so the BigWigs
+  packager finds it — required for CurseForge/Wago/WoWInterface uploads. Updated
+  `.pkgmeta`, the importer output path, and install docs accordingly.
+
 ## [0.6.0] — 2026-06-14
 
 Ship-readiness sweep.

@@ -14,7 +14,7 @@
 ]]
 
 local questieDir = arg[1] or "/tmp/questie"
-local outDir     = arg[2] or "Zenith/Data/Routes/Generated"
+local outDir     = arg[2] or "Data/Routes/Generated"
 
 local function slurp(p) local f = assert(io.open(p, "r")); local s = f:read("*a"); f:close(); return s end
 
@@ -50,7 +50,8 @@ for line in aText:gmatch("[^\n]+") do
 end
 
 -- Quest field indices (Questie questKeys) and NPC/object spawn indices.
-local Q = { name=1, startedBy=2, finishedBy=3, reqLevel=4, level=5, races=6, classes=7, objText=8, zone=17 }
+local Q = { name=1, startedBy=2, finishedBy=3, reqLevel=4, level=5, races=6, classes=7,
+	objText=8, triggerEnd=9, objectives=10, zone=17 }
 local NPC_SPAWNS, OBJ_SPAWNS = 7, 4
 
 -- Resolve a creature/object id to a coordinate, preferring a spawn in `zoneArea`.
@@ -87,6 +88,32 @@ local function resolveEnd(finishedBy, zoneArea)
 	if type(objs) == "table" and objs[1] and objects[objs[1]] then
 		local a, x, y = firstSpawn(objects[objs[1]][OBJ_SPAWNS], zoneArea)
 		if x then return a, x, y end
+	end
+end
+
+-- The quest's objective location (where you go to DO it): the first resolvable
+-- creature/object objective spawn, or an exploration trigger coordinate.
+local function resolveObjective(quest, zoneArea)
+	local obj = quest[Q.objectives]
+	if type(obj) == "table" then
+		local cre = obj[1]   -- creatureObjective {{creatureID, text, icon}, ...}
+		if type(cre) == "table" and cre[1] and cre[1][1] and npcs[cre[1][1]] then
+			local a, x, y = firstSpawn(npcs[cre[1][1]][NPC_SPAWNS], zoneArea)
+			if x then return a, x, y end
+		end
+		local o = obj[2]     -- objectObjective {{objectID, text, icon}, ...}
+		if type(o) == "table" and o[1] and o[1][1] and objects[o[1][1]] then
+			local a, x, y = firstSpawn(objects[o[1][1]][OBJ_SPAWNS], zoneArea)
+			if x then return a, x, y end
+		end
+	end
+	local te = quest[Q.triggerEnd]   -- {text, {[zoneID] = {coordPair, ...}}}
+	if type(te) == "table" and type(te[2]) == "table" then
+		local z = zoneArea and te[2][zoneArea]
+		if z and z[1] and z[1][1] then return zoneArea, z[1][1], z[1][2] end
+		for aid, coords in pairs(te[2]) do
+			if coords[1] and coords[1][1] then return aid, coords[1][1], coords[1][2] end
+		end
 	end
 end
 
@@ -286,6 +313,16 @@ local function buildFaction(orderList, bits)
 				band = { reqL, lvl }, quest = q[Q.name], text = q[Q.name], detail = detail,
 				races = races,
 			}
+			-- Objective coordinate (where to go DO the quest), stored when meaningfully
+			-- far from the giver so the arrow can step giver → objective → turn-in.
+			local oca, ox, oy = resolveObjective(q, z.area)
+			if ox then
+				local omap = (oca and areaInfo[oca] and areaInfo[oca].ui) or it.mapID
+				local far = it.x and it.y and (math.abs(ox - it.x) + math.abs(oy - it.y) > 4)
+				if omap ~= st.mapID or far or not it.x then
+					st.ox, st.oy, st.omap = round(ox), round(oy), omap
+				end
+			end
 			-- Turn-in coordinate (where to hand the quest in), stored only when it's
 			-- meaningfully different from the giver — so the arrow can switch to it
 			-- once objectives are complete.
@@ -325,6 +362,9 @@ local function writeFaction(faction, steps)
 		if s.mapID then parts[#parts+1] = "mapID=" .. s.mapID end
 		if s.x then parts[#parts+1] = "x=" .. s.x end
 		if s.y then parts[#parts+1] = "y=" .. s.y end
+		if s.ox then parts[#parts+1] = "ox=" .. s.ox end
+		if s.oy then parts[#parts+1] = "oy=" .. s.oy end
+		if s.omap then parts[#parts+1] = "omap=" .. s.omap end
 		if s.tx then parts[#parts+1] = "tx=" .. s.tx end
 		if s.ty then parts[#parts+1] = "ty=" .. s.ty end
 		if s.tmap then parts[#parts+1] = "tmap=" .. s.tmap end
