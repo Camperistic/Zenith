@@ -2,6 +2,17 @@
 
 All notable changes to Zenith are documented here.
 
+## [1.0.0] — 2026-06-15
+
+First public release. Uploads to Wago succeed; this fixes the release workflow's
+GitHub-release step.
+
+### Fixed
+- Release workflow: grant the job `permissions: contents: write` so the BigWigs
+  packager can create/attach the GitHub release for the tag (the default read-only
+  `GITHUB_TOKEN` returned 403 "Resource not accessible by integration"). The Wago
+  upload itself already succeeded.
+
 ## [0.8.0] — 2026-06-15
 
 ### Added
