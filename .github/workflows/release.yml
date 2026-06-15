@@ -1,6 +1,6 @@
 name: Package and release
 
-# Tag a release (e.g. `v0.2.0`) to build and (optionally) publish the addon.
+# Tag a release (e.g. `v1.0.0`) to build and publish the addon.
 on:
   push:
     tags:
@@ -9,22 +9,31 @@ on:
 jobs:
   release:
     runs-on: ubuntu-latest
-    # Allow the packager to create/update the GitHub release for the tag
-    # (the default GITHUB_TOKEN is read-only, which 403s on release creation).
+    # Let the packager create/update the GitHub release for the tag.
     permissions:
       contents: write
     steps:
       - name: Clone project
         uses: actions/checkout@v4
 
-      - name: Package and release
+      # Build the package + create the GitHub release (and CurseForge / WoWInterface
+      # if those secrets are set). This is the reliable part of the release.
+      - name: Package & GitHub release
         uses: BigWigsMods/packager@v2
-        # Add these repo secrets to publish automatically; without them the
-        # action still builds and attaches a zip to the GitHub release.
         env:
-          CF_API_KEY: ${{ secrets.CF_API_KEY }}        # CurseForge
-          WOWI_API_TOKEN: ${{ secrets.WOWI_API_TOKEN }} # WoWInterface
-          WAGO_API_TOKEN: ${{ secrets.WAGO_API_TOKEN }} # Wago
+          CF_API_KEY: ${{ secrets.CF_API_KEY }}        # CurseForge (optional)
+          WOWI_API_TOKEN: ${{ secrets.WOWI_API_TOKEN }} # WoWInterface (optional)
           GITHUB_OAUTH: ${{ secrets.GITHUB_TOKEN }}     # provided automatically
+        with:
+          args: -g bcc
+
+      # Upload to Wago separately and allow it to fail: the Wago API occasionally
+      # returns transient 403s, and a hiccup there must not fail the whole release
+      # (the GitHub release above already published).
+      - name: Upload to Wago (non-blocking)
+        continue-on-error: true
+        uses: BigWigsMods/packager@v2
+        env:
+          WAGO_API_TOKEN: ${{ secrets.WAGO_API_TOKEN }} # Wago
         with:
           args: -g bcc
