@@ -51,20 +51,25 @@ local function buildChrome()
 		ns.account.framePoint = { p, rp, x, y }
 	end)
 
-	-- backplate + accent edges
-	panel(f, 0.04, 0.05, 0.04, 0.94):SetAllPoints()
-	local top = panel(f, AC[1], AC[2], AC[3], 0.9); top:SetPoint("TOPLEFT"); top:SetPoint("TOPRIGHT"); top:SetHeight(2)
-	local hdr = panel(f, AC[1] * 0.25, AC[2] * 0.25, AC[3] * 0.25, 0.6)
-	hdr:SetPoint("TOPLEFT", 0, -2); hdr:SetPoint("TOPRIGHT", 0, -2); hdr:SetHeight(28)
+	-- dark backplate, header band, accent border + top line
+	panel(f, 0.045, 0.05, 0.045, 0.96):SetAllPoints()
+	local hdr = panel(f, AC[1] * 0.16, AC[2] * 0.16, AC[3] * 0.16, 0.9)
+	hdr:SetPoint("TOPLEFT", 1, -1); hdr:SetPoint("TOPRIGHT", -1, -1); hdr:SetHeight(28)
+	local top = panel(f, AC[1], AC[2], AC[3], 1); top:SetPoint("TOPLEFT", 1, -29); top:SetPoint("TOPRIGHT", -1, -29); top:SetHeight(1)
+	ns.W.Border(f, AC[1], AC[2], AC[3], 0.75, 1)
 
-	local title = fs(f, "GameFontNormalLarge", 12, -7)
+	local logo = f:CreateTexture(nil, "OVERLAY")
+	logo:SetSize(18, 18); logo:SetPoint("TOPLEFT", 8, -5)
+	logo:SetTexture("Interface\\Icons\\INV_Misc_Map_01"); logo:SetTexCoord(0.1, 0.9, 0.1, 0.9)
+
+	local title = fs(f, "GameFontNormalLarge", 30, -7)
 	title:SetText(U.Accent("Zenith") .. U.Dim("  v" .. ns.VERSION))
 
 	local close = CreateFrame("Button", nil, f, "UIPanelCloseButton")
 	close:SetPoint("TOPRIGHT", 2, 2)
 	close:SetScript("OnClick", function() M:Hide() end)
 
-	local lock = button(f, "Lock", 46, 18)
+	local lock = ns.W.Button(f, "Lock", 50, 18)
 	lock:SetPoint("TOPRIGHT", -26, -5)
 	lock:SetScript("OnClick", function()
 		ns.account.locked = not ns.account.locked
@@ -78,14 +83,14 @@ local function buildChrome()
 end
 
 -- ── tabs ──────────────────────────────────────────────────────────────────────
-local TAB_ORDER = { "Guide", "Talents", "Gear", "Help" }
+local TAB_ORDER = { "Guide", "Talents", "Gear", "Stats", "Help" }
 
 local function buildTabs(f)
 	tabs = {}
-	local x = 8
+	local x = 6
 	for _, name in ipairs(TAB_ORDER) do
 		local b = CreateFrame("Button", nil, f)
-		b:SetSize(82, 22)
+		b:SetSize(67, 22)
 		b:SetPoint("TOPLEFT", x, -32)
 		local label = b:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
 		label:SetAllPoints(); label:SetText(name)
@@ -95,7 +100,7 @@ local function buildTabs(f)
 		b.underline = underline
 		b:SetScript("OnClick", function() M:SelectTab(name) end)
 		tabs[name] = b
-		x = x + 86
+		x = x + 70
 	end
 end
 
@@ -152,7 +157,16 @@ function M:OnEnable()
 	ns:RegisterMessage("ZENITH_STEP_COMPLETED",function() M:RefreshActive() end)
 	ns:RegisterMessage("ZENITH_ROUTE_LOADED",  function() M:RefreshActive() end)
 	ns:RegisterMessage("ZENITH_TALENT_AVAILABLE", function() M:RefreshActive() end)
+	ns:RegisterMessage("ZENITH_LEVEL_TRACKED", function() M:RefreshActive() end)
 	ns:On("PLAYER_LEVEL_UP", function() C_Timer.After(0.3, function() M:RefreshActive() end) end)
+	-- Live objective progress: refresh the visible pane on quest-log changes (throttled).
+	local qlu = 0
+	ns:On("QUEST_LOG_UPDATE", function()
+		local now = GetTime()
+		if now - qlu < 0.5 then return end
+		qlu = now
+		M:RefreshActive()
+	end)
 
 	-- Slash commands.
 	SLASH_ZENITH1, SLASH_ZENITH2 = "/zenith", "/zen"

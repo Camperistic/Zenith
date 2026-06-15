@@ -2,7 +2,7 @@
 ## Title: |cff73db45Zenith|r
 ## Notes: Guided ascent to 70 — RestedXP-style leveling + min-max talent, gear & rotation coaching for TBC Classic.
 ## Author: Camperistic
-## Version: 1.0.1
+## Version: 1.2.0
 ## OptionalDeps: TomTom
 ## SavedVariables: ZenithDB
 ## SavedVariablesPerCharacter: ZenithCharDB
@@ -43,9 +43,12 @@ Engine\Waypoint.lua
 Engine\TalentCoach.lua
 Engine\RotationHelper.lua
 Engine\GearAdvisor.lua
+Engine\LevelTracker.lua
 
 # UI
+UI\Widgets.lua
 UI\Panes.lua
 UI\MainFrame.lua
 UI\MiniButton.lua
+UI\ActionBar.lua
 UI\Options.lua

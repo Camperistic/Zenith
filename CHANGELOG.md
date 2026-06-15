@@ -2,6 +2,45 @@
 
 All notable changes to Zenith are documented here.
 
+## [1.2.0] — 2026-06-15
+
+### Added
+- **Action bar** with two secure buttons tied to the current step: **Target** the
+  quest's objective mob, and **Use** the quest-provided item (shown only when you have
+  it). Updates out of combat; movable; toggle in options.
+- Generated route now carries each quest's target mob name and quest item id.
+
+### Changed (UI polish)
+- Window restyled: accent border, cleaner header with logo + accent underline, flat
+  themed buttons (Back/Done/Skip/Lock) instead of the default gold buttons, and a
+  **per-step icon** on the current-step card (quest / turn-in / travel / dungeon …).
+
+## [1.1.0] — 2026-06-15
+
+New features (toward "better than RestedXP + Questie"):
+
+### Added
+- **Leveling tracker + Stats tab**: per-level time splits, total active played time,
+  and a live "ETA to next ding" from your current XP rate.
+- **Live objective progress** in the Guide: while a quest is in your log, the current
+  step shows its objectives with live x/y counts (green when finished), refreshing on
+  quest-log changes.
+
+## [1.0.2] — 2026-06-15
+
+More in-game fixes.
+
+### Fixed
+- **Wrong race routing.** The race bitmask used incorrect bit values (Blizzard's
+  `requiredRaces` are Human 1, Orc 2, Dwarf 4, NightElf 8, Undead 16, Tauren 32,
+  Gnome 64, Troll 128, BloodElf 512, Draenei 1024), so quests carrying Questie's real
+  race data were misfiltered — e.g. a Draenei could be routed through Dun Morogh.
+  Corrected in both the importer and runtime, and the route was regenerated. Each race
+  now starts in its own zone (Draenei→Azuremyst/Bloodmyst, Dwarf/Gnome→Dun Morogh, etc.),
+  and cross-faction quests no longer leak between the Alliance/Horde routes.
+- **Cursor stuck on a "Travel to X" header.** Zone headers now grey-skip by level like
+  quests, so an out-leveled header no longer parks the cursor.
+
 ## [1.0.1] — 2026-06-15
 
 Fixes from in-game testing on a modern client.

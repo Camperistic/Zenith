@@ -39,10 +39,10 @@ function U.PlayerLevel()
 	return UnitLevel("player")
 end
 
--- Race bitmask (matches Questie/Blizzard requiredRaces) for filtering quest steps.
+-- Race bitmask (Blizzard requiredRaces values) for filtering quest steps.
 local RACE_BIT = {
-	Human = 1, Dwarf = 2, NightElf = 4, Gnome = 8, Draenei = 1024,
-	Orc = 16, Scourge = 32, Tauren = 64, Troll = 128, BloodElf = 512,
+	Human = 1, Orc = 2, Dwarf = 4, NightElf = 8, Scourge = 16,
+	Tauren = 32, Gnome = 64, Troll = 128, BloodElf = 512, Draenei = 1024,
 }
 function U.PlayerRaceBit()
 	local _, token = UnitRace("player")

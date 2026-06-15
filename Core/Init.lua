@@ -67,6 +67,7 @@ ns.defaults = {
 		showArrow     = true,
 		useTomTom     = true,
 		showRotation  = true,
+		showActionBar = true,
 		showTalentPop = true,
 		skipGrey      = true,    -- auto-skip out-leveled (grey) quests
 		minimap       = { hide = false, angle = 215 },
@@ -78,6 +79,7 @@ ns.defaults = {
 		stepIndex     = 1,      -- current step in the route
 		completed     = {},     -- [stepId] = true (manual/auto completion)
 		seenQuests    = {},     -- [questTitleLower] = true (for turn-in detection)
+		tracker       = { splits = {}, activeTotal = 0 },  -- leveling time tracker
 	},
 }
 
