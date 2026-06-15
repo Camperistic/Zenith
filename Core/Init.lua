@@ -67,6 +67,7 @@ ns.defaults = {
 		showArrow     = true,
 		useTomTom     = true,
 		showRotation  = true,
+		showActionBar = true,
 		showTalentPop = true,
 		skipGrey      = true,    -- auto-skip out-leveled (grey) quests
 		minimap       = { hide = false, angle = 215 },

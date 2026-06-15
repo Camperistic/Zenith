@@ -2,6 +2,19 @@
 
 All notable changes to Zenith are documented here.
 
+## [1.2.0] — 2026-06-15
+
+### Added
+- **Action bar** with two secure buttons tied to the current step: **Target** the
+  quest's objective mob, and **Use** the quest-provided item (shown only when you have
+  it). Updates out of combat; movable; toggle in options.
+- Generated route now carries each quest's target mob name and quest item id.
+
+### Changed (UI polish)
+- Window restyled: accent border, cleaner header with logo + accent underline, flat
+  themed buttons (Back/Done/Skip/Lock) instead of the default gold buttons, and a
+  **per-step icon** on the current-step card (quest / turn-in / travel / dungeon …).
+
 ## [1.1.0] — 2026-06-15
 
 New features (toward "better than RestedXP + Questie"):

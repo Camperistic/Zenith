@@ -51,20 +51,25 @@ local function buildChrome()
 		ns.account.framePoint = { p, rp, x, y }
 	end)
 
-	-- backplate + accent edges
-	panel(f, 0.04, 0.05, 0.04, 0.94):SetAllPoints()
-	local top = panel(f, AC[1], AC[2], AC[3], 0.9); top:SetPoint("TOPLEFT"); top:SetPoint("TOPRIGHT"); top:SetHeight(2)
-	local hdr = panel(f, AC[1] * 0.25, AC[2] * 0.25, AC[3] * 0.25, 0.6)
-	hdr:SetPoint("TOPLEFT", 0, -2); hdr:SetPoint("TOPRIGHT", 0, -2); hdr:SetHeight(28)
+	-- dark backplate, header band, accent border + top line
+	panel(f, 0.045, 0.05, 0.045, 0.96):SetAllPoints()
+	local hdr = panel(f, AC[1] * 0.16, AC[2] * 0.16, AC[3] * 0.16, 0.9)
+	hdr:SetPoint("TOPLEFT", 1, -1); hdr:SetPoint("TOPRIGHT", -1, -1); hdr:SetHeight(28)
+	local top = panel(f, AC[1], AC[2], AC[3], 1); top:SetPoint("TOPLEFT", 1, -29); top:SetPoint("TOPRIGHT", -1, -29); top:SetHeight(1)
+	ns.W.Border(f, AC[1], AC[2], AC[3], 0.75, 1)
 
-	local title = fs(f, "GameFontNormalLarge", 12, -7)
+	local logo = f:CreateTexture(nil, "OVERLAY")
+	logo:SetSize(18, 18); logo:SetPoint("TOPLEFT", 8, -5)
+	logo:SetTexture("Interface\\Icons\\INV_Misc_Map_01"); logo:SetTexCoord(0.1, 0.9, 0.1, 0.9)
+
+	local title = fs(f, "GameFontNormalLarge", 30, -7)
 	title:SetText(U.Accent("Zenith") .. U.Dim("  v" .. ns.VERSION))
 
 	local close = CreateFrame("Button", nil, f, "UIPanelCloseButton")
 	close:SetPoint("TOPRIGHT", 2, 2)
 	close:SetScript("OnClick", function() M:Hide() end)
 
-	local lock = button(f, "Lock", 46, 18)
+	local lock = ns.W.Button(f, "Lock", 50, 18)
 	lock:SetPoint("TOPRIGHT", -26, -5)
 	lock:SetScript("OnClick", function()
 		ns.account.locked = not ns.account.locked

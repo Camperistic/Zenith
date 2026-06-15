@@ -31,6 +31,13 @@ function M:OnEnable()
 		{ "Show the rotation helper", "On-screen next-ability suggestion in combat.",
 			function() return ns.account.showRotation end,
 			function(v) ns.account.showRotation = v end },
+		{ "Show the action bar", "Target / use-item buttons for the current quest.",
+			function() return ns.account.showActionBar end,
+			function(v) ns.account.showActionBar = v
+				if ns.GetModule and ns:GetModule("StepEngine") then
+					ns:SendMessage("ZENITH_STEP_CHANGED", ns.char.stepIndex,
+						ns:GetModule("StepEngine"):CurrentStep())
+				end end },
 		{ "Talent point pop-ups", "Remind me where to spend points on level-up.",
 			function() return ns.account.showTalentPop end,
 			function(v) ns.account.showTalentPop = v end },

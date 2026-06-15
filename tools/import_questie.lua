@@ -51,7 +51,7 @@ end
 
 -- Quest field indices (Questie questKeys) and NPC/object spawn indices.
 local Q = { name=1, startedBy=2, finishedBy=3, reqLevel=4, level=5, races=6, classes=7,
-	objText=8, triggerEnd=9, objectives=10, zone=17 }
+	objText=8, triggerEnd=9, objectives=10, sourceItemId=11, zone=17 }
 local NPC_SPAWNS, OBJ_SPAWNS = 7, 4
 
 -- Resolve a creature/object id to a coordinate, preferring a spawn in `zoneArea`.
@@ -114,6 +114,16 @@ local function resolveObjective(quest, zoneArea)
 		for aid, coords in pairs(te[2]) do
 			if coords[1] and coords[1][1] then return aid, coords[1][1], coords[1][2] end
 		end
+	end
+end
+
+-- Name of the first creature this quest asks you to kill (for a target macro).
+local function firstObjectiveCreature(quest)
+	local obj = quest[Q.objectives]
+	if type(obj) == "table" and type(obj[1]) == "table" and obj[1][1] and obj[1][1][1] then
+		local id = obj[1][1][1]
+		local npc = npcs[id]
+		if npc and npc[1] then return npc[1] end
 	end
 end
 
@@ -336,6 +346,10 @@ local function buildFaction(orderList, bits)
 					st.tx, st.ty, st.tmap = round(fx), round(fy), fmap
 				end
 			end
+			-- Quest-provided item to use (e.g. an orb), and the mob to target.
+			local item = q[Q.sourceItemId]
+			if type(item) == "number" and item > 0 then st.item = item end
+			st.target = firstObjectiveCreature(q)
 			steps[#steps + 1] = st
 		end
 	end
@@ -374,6 +388,8 @@ local function writeFaction(faction, steps)
 		if s.quest then parts[#parts+1] = "quest=" .. q(s.quest) end
 		if s.text then parts[#parts+1] = "text=" .. q(s.text) end
 		if s.detail then parts[#parts+1] = "detail=" .. q(s.detail) end
+		if s.target then parts[#parts+1] = "target=" .. q(s.target) end
+		if s.item then parts[#parts+1] = "item=" .. s.item end
 		if s.races then parts[#parts+1] = "races=" .. s.races end
 		out[#out+1] = "{" .. table.concat(parts, ",") .. "},"
 	end
