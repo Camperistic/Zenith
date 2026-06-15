@@ -9,6 +9,10 @@ on:
 jobs:
   release:
     runs-on: ubuntu-latest
+    # Allow the packager to create/update the GitHub release for the tag
+    # (the default GITHUB_TOKEN is read-only, which 403s on release creation).
+    permissions:
+      contents: write
     steps:
       - name: Clone project
         uses: actions/checkout@v4
