@@ -2,6 +2,15 @@
 
 All notable changes to Zenith are documented here.
 
+## [0.8.0] — 2026-06-15
+
+### Added
+- **Batch "questing loop" waypoint**: the arrow now groups the nearby quests around
+  your position into one hub batch and walks you through it the way you actually quest —
+  **accept everything nearby → do all the objectives → loop back and turn them all in** —
+  always heading to the nearest one in the current phase. Re-plans on quest-log changes
+  and a few times a second so it tracks your movement. (`StepEngine:NextWaypoint`.)
+
 ## [0.7.0] — 2026-06-15
 
 ### Added

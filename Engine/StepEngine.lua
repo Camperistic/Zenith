@@ -64,6 +64,82 @@ function M:NextCoordStep()
 	end
 end
 
+-- ── Batch-aware "questing loop" waypoint ──────────────────────────────────────
+-- Groups the nearby quests around the cursor into one geographic batch (the hub
+-- the importer already clustered) and walks you through it the way you actually
+-- quest: accept everything nearby, do all the objectives, then loop back and turn
+-- them all in. Phase = the lowest-priority action present in the batch
+-- (accept < do < turn-in); within a phase, head to the nearest one.
+local BATCH_R2 = 12 * 12          -- batch radius² (map %) around the anchor
+local WINDOW = 40                 -- how far ahead to look for batch members
+
+local function sq(ax, ay, bx, by) local dx, dy = ax - bx, ay - by; return dx * dx + dy * dy end
+
+-- priority, mapID, x, y, stage for a not-yet-finished quest step.
+local function stepAction(s)
+	if s.qid then
+		if U.QuestReadyToTurnIn(s.qid) then return 3, s.tmap or s.mapID, s.tx or s.x, s.ty or s.y, "turn in" end
+		if U.IsQuestInLog(s.qid)       then return 2, s.omap or s.mapID, s.ox or s.x, s.oy or s.y, "do" end
+		return 1, s.mapID, s.x, s.y, "accept"
+	end
+	return 2, s.mapID, s.x, s.y, "do"
+end
+
+function M:NextWaypoint()
+	local idx = ns.char.stepIndex or 1
+	local cur = activeSteps[idx]
+	if not cur then return nil end
+
+	-- anchor on the first upcoming open quest with coordinates
+	local ax, ay, azone
+	for i = idx, math.min(#activeSteps, idx + WINDOW) do
+		local s = activeSteps[i]
+		if s.kind == "quest" and s.x and s.y and not M:IsStepComplete(s) then
+			ax, ay, azone = s.x, s.y, s.zone; break
+		end
+	end
+	if not ax then
+		local s = M:NextCoordStep()
+		if s then return s.mapID, s.x, s.y, s.zone, "go" end
+		return M:WaypointFor(cur)
+	end
+
+	-- collect the batch: open quests in the same zone within radius of the anchor
+	local batch = {}
+	for i = idx, math.min(#activeSteps, idx + WINDOW) do
+		local s = activeSteps[i]
+		if s.kind == "quest" and not M:IsStepComplete(s) and s.zone == azone then
+			if not (s.x and s.y) or sq(ax, ay, s.x, s.y) <= BATCH_R2 then
+				batch[#batch + 1] = s
+			end
+		end
+	end
+	if #batch == 0 then return M:WaypointFor(cur) end
+
+	-- lowest action priority present → that's the current phase
+	local phase = 9
+	for _, s in ipairs(batch) do local p = stepAction(s); if p < phase then phase = p end end
+
+	-- nearest target within the phase (measure from the player when on-map, else anchor)
+	local px, py, pmap = U.PlayerPosition()
+	local best, bestD, bestStage, bestMap
+	for _, s in ipairs(batch) do
+		local p, mp, x, y, stage = stepAction(s)
+		if p == phase and mp and x and y then
+			local rx, ry = ax, ay
+			if px and pmap == mp then rx, ry = px, py end
+			local d = sq(rx, ry, x, y)
+			if not bestD or d < bestD then
+				bestD, best, bestStage, bestMap = d, { x = x, y = y }, stage, mp
+			end
+		end
+	end
+	if best then
+		return bestMap, best.x, best.y, (azone or "") .. " (" .. bestStage .. ")", bestStage
+	end
+	return M:WaypointFor(cur)
+end
+
 -- Where the arrow should point for a step, stepping through the quest's life:
 --   not accepted        → the giver
 --   accepted, working   → the objective area (where to do it)

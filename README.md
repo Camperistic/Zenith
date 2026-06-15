@@ -28,9 +28,10 @@ you're leveling *well*.
 - **All 9 classes coached** — Warrior (Arms), Paladin (Ret), Hunter (BM), Rogue (Combat),
   Priest (Shadow), Shaman (Enh), Mage (Frost), Warlock (Demo/Felguard), Druid (Feral):
   full 61-point leveling talent path + an in-combat rotation helper for each.
-- **Three-stage waypoint arrow** — points at the quest **giver** until you accept, the
-  **objective area** while you work it, then the **turn-in NPC** once it's complete. Shows
-  distance; drag to reposition. (Optional TomTom pins follow the same target.)
+- **Batch "questing loop" waypoint** — groups nearby quests into a hub and walks you
+  through them the way you actually quest: **accept everything nearby → do all the
+  objectives → loop back and turn them all in**, always heading to the nearest one in the
+  current phase. Shows distance; drag to reposition. (Optional TomTom pins follow the same target.)
 - **Real-time talent coach** — counts the points you've actually spent and tells you
   **exactly where to put your next point**, highlighting **power spikes** (Intimidation,
   Bestial Wrath, Serpent's Swiftness, The Beast Within). Pops a reminder on level-up.
@@ -122,9 +123,9 @@ Talent path: **41 BM / 20 MM / 0 SV** ("leveling = endgame", no respec at 70).
 - [x] **Quest-granular engine** (per-quest waypoints, accept/objective/turn-in auto-detect, TomTom)
 - [x] **Comprehensive quest route, all zones 1–70, both factions, per-race** (Questie import)
 - [x] **Hub-cluster ordering** within zones (nearby quests grouped, level-banded nearest-neighbour)
-- [x] **Three-stage waypoints** (giver → objective area → turn-in)
+- [x] **Batch questing-loop waypoint** (accept nearby → do all → mass turn-in, nearest-first)
 - [x] **Wago/CurseForge-publishable layout** (addon at repo root, `.pkgmeta`, packager workflow)
-- [ ] Chain-aware batched turn-ins (accept a chain, do it, mass turn-in)
+- [ ] Mirror the batch phase in the Guide window's step list (arrow already does it)
 - [ ] Cross-zone routing polish (when to bounce between adjacent zones at overlapping levels)
 - [ ] Flight-path / hearthstone hints alongside quests
 - [ ] Detailed gear milestone + pre-raid BiS item lists for the other 8 classes

@@ -42,17 +42,20 @@ end
 
 function M:ClearTarget() M:SetTarget(nil) end
 
--- Point the arrow at the right place for a step: giver, or the turn-in NPC once
--- objectives are complete, or the next objective if this step is a zone header.
-function M:SyncFromStep(step)
+-- Point the arrow using the batch-aware "questing loop" planner (accept nearby
+-- quests → do their objectives → loop back to turn them all in).
+function M:Resync()
 	local se = ns:GetModule("StepEngine")
-	local mapID, x, y, label = se and se.WaypointFor and se:WaypointFor(step)
+	local mapID, x, y, label = se and se.NextWaypoint and se:NextWaypoint()
 	if mapID and x and y then
 		M:SetTarget(mapID, x, y, label)
 	else
 		M:ClearTarget()
 	end
 end
+
+-- Kept for STEP_CHANGED hooks (and unit tests); both just re-plan.
+function M:SyncFromStep() M:Resync() end
 
 local function buildArrow()
 	local f = CreateFrame("Frame", "ZenithArrow", UIParent)
@@ -89,6 +92,10 @@ local function buildArrow()
 	else f:SetPoint("CENTER", UIParent, "CENTER", 0, 150) end
 
 	f:SetScript("OnUpdate", function(self, elapsed)
+		-- Re-plan a couple of times a second so "nearest in the batch" tracks movement.
+		self.rt = (self.rt or 0) + elapsed
+		if self.rt >= 1.0 then self.rt = 0; M:Resync() end
+
 		self.t = (self.t or 0) + elapsed
 		if self.t < 0.03 then return end   -- ~30fps is plenty
 		self.t = 0
