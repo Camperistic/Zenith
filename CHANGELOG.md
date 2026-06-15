@@ -2,6 +2,23 @@
 
 All notable changes to Zenith are documented here.
 
+## [1.0.1] — 2026-06-15
+
+Fixes from in-game testing on a modern client.
+
+### Fixed
+- **Cursor now tracks where you actually are.** It used to only move forward, so a
+  stale/ahead position (or a high-level quest sorted into a low-level zone, e.g. the
+  Dustwallow dragon quests) could leave you parked at 58–60 content while leveling at 40.
+  The cursor now re-anchors on login, level-up, zone change, and turn-in — pulling back
+  to the first quest you can actually do at your level. This also fixes the **missing
+  arrow** (it was pointing at a far-away zone).
+- **Skip now persists** so skipped quests don't reappear when the cursor re-anchors.
+- **Version display** (and other metadata) now read via `C_AddOns.GetAddOnMetadata` on
+  modern clients — fixes the title showing "v0.1.0".
+- **Rotation helper** degrades gracefully (no per-frame errors) if the client's spell
+  APIs aren't the expected globals.
+
 ## [1.0.0] — 2026-06-15
 
 First public release. Uploads to Wago succeed; this fixes the release workflow's

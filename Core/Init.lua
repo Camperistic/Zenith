@@ -12,7 +12,9 @@ local ADDON_NAME, ns = ...
 
 ns.ADDON  = ADDON_NAME
 ns.NAME   = "Zenith"
-ns.VERSION = GetAddOnMetadata and GetAddOnMetadata(ADDON_NAME, "Version") or "0.1.0"
+-- GetAddOnMetadata moved to C_AddOns on modern (11.x-based) clients.
+local getMeta = (C_AddOns and C_AddOns.GetAddOnMetadata) or GetAddOnMetadata
+ns.VERSION = (getMeta and getMeta(ADDON_NAME, "Version")) or "1.0.0"
 
 -- Public color palette (fel-green TBC flavour) used across the UI.
 ns.COLORS = {
