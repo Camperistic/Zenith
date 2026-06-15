@@ -185,9 +185,9 @@ function M:IsStepComplete(step)
 		if U.PlayerMapID() == step.mapID then return true end
 	end
 
-	-- Auto-skip out-leveled (grey) quests so a mid-level character isn't sent
-	-- backwards through content they've out-grown.
-	if step.qid and ns.account.skipGrey ~= false and step.band and step.band[2] then
+	-- Auto-skip out-leveled (grey) steps — quests AND zone headers — so a
+	-- mid-level character isn't parked on early content they've out-grown.
+	if ns.account.skipGrey ~= false and step.band and step.band[2] then
 		if U.PlayerLevel() > step.band[2] + GREY_GAP then return true end
 	end
 

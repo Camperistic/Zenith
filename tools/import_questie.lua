@@ -197,8 +197,10 @@ local function clusterOrder(list, zoneArea, zoneUi)
 end
 
 -- ── Race / faction masks ──────────────────────────────────────────────────────
-local ALLY = { 1, 2, 4, 8, 1024 }              -- Human, Dwarf, NightElf, Gnome, Draenei
-local HORDE = { 16, 32, 64, 128, 512 }         -- Orc, Undead, Tauren, Troll, BloodElf
+-- Blizzard requiredRaces bits: Human 1, Orc 2, Dwarf 4, NightElf 8, Undead 16,
+-- Tauren 32, Gnome 64, Troll 128, BloodElf 512, Draenei 1024.
+local ALLY = { 1, 4, 8, 64, 1024 }             -- Human, Dwarf, NightElf, Gnome, Draenei
+local HORDE = { 2, 16, 32, 128, 512 }          -- Orc, Undead, Tauren, Troll, BloodElf
 local function hasBit(mask, bit) return math.floor(mask / bit) % 2 == 1 end
 local function availableTo(races, bits)
 	if not races or races == 0 then return true end
@@ -231,15 +233,15 @@ local HORDE_ORDER = {
 -- out at runtime). Mid/shared zones keep each quest's own race requirement.
 local ZONE_OWNER = {
 	-- Alliance
-	["Northshire Valley"] = 1, ["Elwynn Forest"] = 1,
-	["Coldridge Valley"] = 10, ["Dun Morogh"] = 10,                 -- Dwarf+Gnome
-	["Shadowglen"] = 4, ["Teldrassil"] = 4, ["Darkshore"] = 4,      -- NightElf
-	["Ammen Vale"] = 1024, ["Azuremyst Isle"] = 1024, ["Bloodmyst Isle"] = 1024,
+	["Northshire Valley"] = 1, ["Elwynn Forest"] = 1,               -- Human
+	["Coldridge Valley"] = 68, ["Dun Morogh"] = 68,                 -- Dwarf(4)+Gnome(64)
+	["Shadowglen"] = 8, ["Teldrassil"] = 8, ["Darkshore"] = 8,      -- NightElf
+	["Ammen Vale"] = 1024, ["Azuremyst Isle"] = 1024, ["Bloodmyst Isle"] = 1024, -- Draenei
 	-- Horde
-	["Valley of Trials"] = 144, ["Durotar"] = 144,                  -- Orc+Troll
-	["Camp Narache"] = 64, ["Mulgore"] = 64,                        -- Tauren
-	["Deathknell"] = 32, ["Tirisfal Glades"] = 32, ["Silverpine Forest"] = 32,
-	["Sunstrider Isle"] = 512, ["Eversong Woods"] = 512, ["Ghostlands"] = 512,
+	["Valley of Trials"] = 130, ["Durotar"] = 130,                  -- Orc(2)+Troll(128)
+	["Camp Narache"] = 32, ["Mulgore"] = 32,                        -- Tauren
+	["Deathknell"] = 16, ["Tirisfal Glades"] = 16, ["Silverpine Forest"] = 16, -- Undead
+	["Sunstrider Isle"] = 512, ["Eversong Woods"] = 512, ["Ghostlands"] = 512,  -- BloodElf
 }
 
 -- Exclude cities / instances / battlegrounds from the field-leveling route.

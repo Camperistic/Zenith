@@ -2,6 +2,21 @@
 
 All notable changes to Zenith are documented here.
 
+## [1.0.2] — 2026-06-15
+
+More in-game fixes.
+
+### Fixed
+- **Wrong race routing.** The race bitmask used incorrect bit values (Blizzard's
+  `requiredRaces` are Human 1, Orc 2, Dwarf 4, NightElf 8, Undead 16, Tauren 32,
+  Gnome 64, Troll 128, BloodElf 512, Draenei 1024), so quests carrying Questie's real
+  race data were misfiltered — e.g. a Draenei could be routed through Dun Morogh.
+  Corrected in both the importer and runtime, and the route was regenerated. Each race
+  now starts in its own zone (Draenei→Azuremyst/Bloodmyst, Dwarf/Gnome→Dun Morogh, etc.),
+  and cross-faction quests no longer leak between the Alliance/Horde routes.
+- **Cursor stuck on a "Travel to X" header.** Zone headers now grey-skip by level like
+  quests, so an out-leveled header no longer parks the cursor.
+
 ## [1.0.1] — 2026-06-15
 
 Fixes from in-game testing on a modern client.
