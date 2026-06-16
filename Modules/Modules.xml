@@ -1,0 +1,5 @@
+<Ui xmlns="http://www.blizzard.com/wow/ui/">
+	<!-- Feature modules (views over the StateModel). Flavour data packs load
+	     separately, per-flavour, from each .toc. -->
+	<Script file="QuestData\QuestData.lua"/>
+</Ui>

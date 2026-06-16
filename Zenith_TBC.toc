@@ -19,6 +19,8 @@ libs\Embeds.xml
 # Core architecture (StateModel + EventBus + Registry + Init).
 Core\Core.xml
 
-# Flavour data pack (Phase 1): Data\packs\tbc\pack.xml
+# Feature modules.
+Modules\Modules.xml
 
-# Feature modules (Phases 1–5): Modules\...
+# Flavour data pack (lazy zone strings).
+Data\packs\tbc\QuestData.lua
