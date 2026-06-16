@@ -54,6 +54,9 @@ function ns:Slash(msg)
 			for _, m in ipairs(ns.Registry:All()) do t[#t + 1] = m.name .. (m._enabled and "+" or "-") end
 			return #t > 0 and table.concat(t, ", ") or "none"
 		end)())
+		ns:Print(string.format("data flavour: %s · faction: %s · race: %s · route steps: %d",
+			ns:DataFlavor(), tostring(ns.State:Faction()), tostring(ns.State:Race()),
+			ns.Route and ns.Route:Count() or 0))
 		ns:Print("settings: |cffffd100/zen config|r (or right-click the minimap button)")
 	elseif msg == "debug" then
 		ns.db.profile.debug = not ns.db.profile.debug

@@ -27,6 +27,18 @@ ns.flavor = {
 
 -- Data packs register the flavours they cover so Init can friendly-fail cleanly.
 ns.dataPacks = ns.dataPacks or {}          -- [flavorId] = true once a pack loads
+
+-- The flavour whose data pack is actually loaded. We trust the loaded TOC: each
+-- client's .toc only lists its own pack, so if our WOW_PROJECT_ID→id guess doesn't
+-- match a registered pack but exactly one pack IS registered, that pack is the right
+-- one. Keeps Zenith working on clients we don't explicitly map (e.g. the Anniversary
+-- realms, whose WOW_PROJECT_ID may not be WOW_PROJECT_BURNING_CRUSADE).
+function ns:DataFlavor()
+	if ns.dataPacks[ns.flavor.id] then return ns.flavor.id end
+	for fid in pairs(ns.dataPacks) do return fid end   -- the single loaded pack
+	return ns.flavor.id
+end
+
 function ns:HasDataPack(flavorId)
-	return ns.dataPacks[flavorId or ns.flavor.id] == true
+	return ns.dataPacks[flavorId or ns:DataFlavor()] == true
 end
