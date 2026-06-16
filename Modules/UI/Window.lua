@@ -116,7 +116,8 @@ function UI:Select(name)
 	activeTab = name
 	for n, b in pairs(tabs) do
 		local on = n == name
-		b.ul:SetShown(on); b.fs:SetTextColor(on and Theme:RGB("accent") or Theme:RGB("dim"))
+		b.ul:SetShown(on)
+		b.fs:SetTextColor(Theme:RGB(on and "accent" or "dim"))
 	end
 	for n, p in pairs(panes) do p:SetShown(n == name) end
 	if panes[name] and panes[name].Refresh then panes[name]:Refresh() end
