@@ -317,6 +317,17 @@ for _, n in ipairs({
 	"Alterac Valley","Eye of the Storm","Deeprun Tram",
 }) do EXCLUDE[n] = true end
 
+-- Deprecated / test / unimplemented quests that exist in the DB but not in-game.
+-- Real quest names never contain "<" or "(", and never start with these dev tags.
+-- (Careful: "An Old Colleague", "Test of Faith", "Old Hillsbrad" are real — only the
+-- uppercase "OLD "/"TEST " *prefixes* and the angle-bracket markers are placeholders.)
+local function isPlaceholder(n)
+	return n:find("<") or n:find("%(") or n:find("UNUSED")
+		or n:lower():find("deprecated")
+		or n:match("^OLD ") or n:match("^BETA ") or n:match("^DND")
+		or n:match("^NYI") or n:match("^QA ") or n:match("^TEST ") or n:match("^%[")
+end
+
 -- ── Build per-faction routes ──────────────────────────────────────────────────
 local function buildFaction(orderList, bits)
 	-- group valid quests by zone areaID
@@ -339,7 +350,7 @@ local function buildFaction(orderList, bits)
 		local isInstance = zoneName and (zoneName:find("%- Dungeon") or zoneName:find("%- Raid")
 			or zoneName:find("%- Battleground"))
 		local valid = name and #name > 0
-			and not name:find("%(") and not name:lower():find("deprecated")   -- skip test/placeholder
+			and not isPlaceholder(name)                                      -- skip deprecated/test
 			and zoneName and not isInstance
 			and areaInfo[zoneArea].ui and areaInfo[zoneArea].ui > 0          -- skip "fail safe"
 			and lvl > 0 and lvl <= 70
