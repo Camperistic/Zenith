@@ -172,53 +172,33 @@ local function poll()
 	end
 end
 
--- ── batch "questing loop" waypoint (accept-all → do-all → turn-in-all) ──────────
-local BATCH_R2, WINDOW = 144, 40
-local function sq(ax, ay, bx, by) local dx, dy = ax - bx, ay - by; return dx * dx + dy * dy end
+-- ── current guidance: the active quest, its phase, and where to go ──────────────
+-- Each quest walks accept → do → turn in based on its live state, so the arrow and
+-- the Guide card stay in lockstep with what you just did (accept a quest and it
+-- immediately switches to the objective; finish objectives and it points home).
 local function action(s)            -- priority, mapID, x, y, stage
 	if s.qid then
 		if readyTurnIn(s.qid) then return 3, s.tmap or s.mapID, s.tx or s.x, s.ty or s.y, "turn in" end
 		if inLog(s.qid)       then return 2, s.omap or s.mapID, s.ox or s.x, s.oy or s.y, "do" end
 		return 1, s.mapID, s.x, s.y, "accept"
 	end
-	return 2, s.mapID, s.x, s.y, "do"
+	return 2, s.mapID, s.x, s.y, "go"
+end
+
+-- { stage = "accept"|"do"|"turn in"|"go", step, mapID, x, y, label } or nil.
+function Route:Guidance()
+	local s = active[rdb().cursor or 1]; if not s then return nil end
+	if not s.qid then
+		return { stage = "go", step = s, mapID = s.mapID, x = s.x, y = s.y, label = s.zone or "" }
+	end
+	local _, mp, x, y, st = action(s)
+	return { stage = st, step = s, mapID = mp, x = x, y = y, label = (s.zone or "") .. " (" .. st .. ")" }
 end
 
 function Route:NextWaypoint()
-	local idx = rdb().cursor or 1
-	local cur = active[idx]; if not cur then return nil end
-	local ax, ay, az
-	for i = idx, math.min(#active, idx + WINDOW) do
-		local s = active[i]
-		if s.kind == "quest" and s.x and s.y and not self:IsComplete(s) then ax, ay, az = s.x, s.y, s.zone; break end
-	end
-	if not ax then
-		if cur.mapID and cur.x and cur.y then return cur.mapID, cur.x, cur.y, cur.zone, "go" end
-		return nil
-	end
-	local batch = {}
-	for i = idx, math.min(#active, idx + WINDOW) do
-		local s = active[i]
-		if s.kind == "quest" and not self:IsComplete(s) and s.zone == az then
-			if not (s.x and s.y) or sq(ax, ay, s.x, s.y) <= BATCH_R2 then batch[#batch + 1] = s end
-		end
-	end
-	if #batch == 0 then return cur.mapID, cur.x, cur.y, cur.zone, "go" end
-	local phase = 9
-	for _, s in ipairs(batch) do local p = action(s); if p < phase then phase = p end end
-	local px, py, pmap = State:Position()
-	local best, bd, bs, bm
-	for _, s in ipairs(batch) do
-		local p, mp, x, y, st = action(s)
-		if p == phase and mp and x and y then
-			local rx, ry = ax, ay
-			if px and pmap == mp then rx, ry = px, py end
-			local d = sq(rx, ry, x, y)
-			if not bd or d < bd then bd, best, bs, bm = d, { x = x, y = y }, st, mp end
-		end
-	end
-	if best then return bm, best.x, best.y, (az or "") .. " (" .. bs .. ")", bs end
-	return cur.mapID, cur.x, cur.y, cur.zone, "go"
+	local g = self:Guidance()
+	if not g or not (g.mapID and g.x and g.y) then return nil end
+	return g.mapID, g.x, g.y, g.label, g.stage
 end
 
 -- ── module ───────────────────────────────────────────────────────────────────────

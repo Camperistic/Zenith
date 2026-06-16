@@ -67,20 +67,28 @@ local function buildGuide(pane)
 	local host = CreateFrame("Frame", nil, pane); host:SetPoint("TOPLEFT", label, "BOTTOMLEFT", 0, -4); host:SetPoint("BOTTOMRIGHT")
 	local scroll = scrollRegion(host)
 
+	local VERB = { accept = "ACCEPT", ["do"] = "DO", ["turn in"] = "TURN IN", go = "GO TO" }
 	function pane:Refresh()
 		local R = ns.Route
-		local s = R and R:Current()
-		if not s then
+		local g = R and R:Guidance()
+		if not g then
 			icon:SetTexture(nil); tag:SetText(""); detail:SetText(""); objfs:SetText("")
 			if R and R:Count() > 0 then progress:SetText(Theme:Color("accent", "Route complete — congratulations!")); text:SetText("Every quest on the route is done.")
 			else progress:SetText("No route for this character yet."); text:SetText("") end
 			scroll:Set(""); return
 		end
+		local s = g.step
 		local idx = ns.db.char.route.cursor or 1
 		local band = s.band and string.format("  ·  Lvl %d–%d", s.band[1], s.band[2]) or ""
 		progress:SetText(string.format("Step %d / %d   ·   %s%s", idx, R:Count(), s.zone or "", band))
-		icon:SetTexture(W.KindIcon(s.kind)); tag:SetText(Theme:Color("gold", "[" .. (s.kind or "note"):upper() .. "]"))
-		text:SetText(s.text or ""); detail:SetText(s.detail or ""); objfs:SetText(liveObjectives(s.qid) or "")
+		icon:SetTexture(W.KindIcon(s.kind))
+		tag:SetText(Theme:Color("gold", "[" .. (VERB[g.stage] or "DO") .. "]"))
+		text:SetText(s.text or "")
+		local d = s.detail or ""
+		if g.stage == "accept" then d = "Pick up this quest." .. (s.detail and ("  " .. s.detail) or "")
+		elseif g.stage == "turn in" then d = "Hand this quest in." end
+		detail:SetText(d)
+		objfs:SetText((g.stage == "do" and liveObjectives(s.qid)) or "")
 
 		local lines, i = {}, idx + 1
 		while i <= R:Count() and #lines < 7 do
