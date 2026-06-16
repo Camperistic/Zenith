@@ -121,6 +121,28 @@ function Route:Count() return #active end
 function Route:StepAt(i) return active[i] end
 function Route:Current() return active[rdb().cursor or 1] end
 
+-- Auto-catchup: walk the whole route, mark every step whose quest IsQuestFlagged-
+-- Completed as done (persisted per-character), then re-anchor the cursor. Run once
+-- after the quest log is primed, so a fresh install on a leveled character lands
+-- on the first quest you actually still need to do — not back at step 1.
+function Route:CatchUp()
+	local n = 0
+	for _, s in ipairs(active) do
+		if s.qid and questComplete(s.qid) then
+			local key = stepKey(s)
+			if key and not rdb().completed[key] then
+				rdb().completed[key] = true; n = n + 1
+			end
+		end
+	end
+	self:Resync()
+	if ns and ns.Print and n > 0 then
+		ns:Print(string.format("caught up: %d quest%s already done, you're on step %d / %d.",
+			n, n == 1 and "" or "s", rdb().cursor or 1, #active))
+	end
+	return n
+end
+
 function Route:FirstActionable()
 	local lvl = State:Level()
 	local fallback
@@ -312,10 +334,15 @@ ns.Registry:Add({
 		Route:Load()
 		Bus:On("LEVEL_CHANGED",   function() Route:Resync() end)
 		Bus:On("ZONE_CHANGED",    function() Route:Resync() end)
-		Bus:On("QUESTLOG_CHANGED",function() poll() end)
+		local caughtUp = false
+		Bus:On("QUESTLOG_CHANGED",function()
+			if not caughtUp then caughtUp = true; Route:CatchUp() end
+			poll()
+		end)
 		Bus:On("SETTINGS_CHANGED",function(key) if key == "routeMode" then Route:Load() end end)
 		Bus:On("SLASH", function(msg)
 			if msg == "next" then Route:Next() elseif msg == "prev" then Route:Prev()
+			elseif msg == "catchup" then Route:CatchUp()
 			elseif msg == "reset" then rdb().cursor = 1; wipe(rdb().completed); Route:Load() end
 		end)
 	end,
