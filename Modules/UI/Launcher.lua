@@ -12,12 +12,12 @@ ns.Registry:Add({
 			icon = "Interface\\Icons\\INV_Misc_Map_01",
 			label = "Zenith",
 			OnClick = function(_, button)
-				if button == "RightButton" then ns.Bus:Fire("SLASH", "arrow") else ns.UI:Toggle() end
+				if button == "RightButton" then ns:OpenSettings() else ns.UI:Toggle() end
 			end,
 			OnTooltipShow = function(tt)
 				tt:AddLine("|cff73db45Zenith|r")
 				tt:AddLine("Left-click: window", 1, 1, 1)
-				tt:AddLine("Right-click: toggle arrow", 1, 1, 1)
+				tt:AddLine("Right-click: settings", 1, 1, 1)
 			end,
 		})
 		if DBIcon and not DBIcon:IsRegistered("Zenith") then

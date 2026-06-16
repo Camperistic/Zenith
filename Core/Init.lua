@@ -54,6 +54,7 @@ function ns:Slash(msg)
 			for _, m in ipairs(ns.Registry:All()) do t[#t + 1] = m.name .. (m._enabled and "+" or "-") end
 			return #t > 0 and table.concat(t, ", ") or "none"
 		end)())
+		ns:Print("settings: |cffffd100/zen config|r (or right-click the minimap button)")
 	elseif msg == "debug" then
 		ns.db.profile.debug = not ns.db.profile.debug
 		ns:Print("debug " .. (ns.db.profile.debug and "on" or "off"))

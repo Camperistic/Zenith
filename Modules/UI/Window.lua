@@ -124,9 +124,18 @@ end
 
 function UI:RefreshActive() if panes[activeTab] and panes[activeTab].Refresh then panes[activeTab]:Refresh() end end
 function UI:Toggle() if frame:IsShown() then frame:Hide() else frame:Show(); UI:Select(activeTab) end end
+function UI:Frame() return frame end
+
+-- Apply live-tunable profile settings (scale, lock label) to the existing window.
+function UI:ApplySettings()
+	if not frame then return end
+	frame:SetScale(ns.db.profile.scale or 1)
+	if frame.lockBtn then frame.lockBtn:SetText(ns.db.profile.locked and "Unlock" or "Lock") end
+end
 
 local function buildChrome()
 	local f = CreateFrame("Frame", "ZenithWindow", UIParent); f:SetSize(340, 460); f:SetClampedToScreen(true)
+	f:SetScale(ns.db.profile.scale or 1)
 	f:SetMovable(true); f:EnableMouse(true); f:RegisterForDrag("LeftButton"); f:SetFrameStrata("MEDIUM")
 	f:SetScript("OnDragStart", function(self) if not ns.db.profile.locked then self:StartMoving() end end)
 	f:SetScript("OnDragStop", function(self) self:StopMovingOrSizing(); local p, _, rp, x, y = self:GetPoint(); ns.db.profile.point = { p, rp, x, y } end)
@@ -139,6 +148,7 @@ local function buildChrome()
 	local close = CreateFrame("Button", nil, f, "UIPanelCloseButton"); close:SetPoint("TOPRIGHT", 2, 2); close:SetScript("OnClick", function() f:Hide() end)
 	local lock = W.Button(f, ns.db.profile.locked and "Unlock" or "Lock", 50, 18); lock:SetPoint("TOPRIGHT", -26, -5)
 	lock:SetScript("OnClick", function() ns.db.profile.locked = not ns.db.profile.locked; lock:SetText(ns.db.profile.locked and "Unlock" or "Lock") end)
+	f.lockBtn = lock
 	local pt = ns.db.profile.point
 	if pt then f:SetPoint(pt[1], UIParent, pt[2], pt[3], pt[4]) else f:SetPoint("CENTER", 280, 0) end
 	return f

@@ -9,6 +9,7 @@
 	<Script file="UI\Widgets.lua"/>
 	<Script file="UI\Window.lua"/>
 	<Script file="UI\Launcher.lua"/>
+	<Script file="UI\Options.lua"/>
 	<Script file="Coach\Coach.lua"/>
 	<Script file="Coach\GearAdvisor.lua"/>
 	<Script file="Stats\Stats.lua"/>
