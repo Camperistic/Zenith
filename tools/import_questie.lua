@@ -394,6 +394,17 @@ local function buildFaction(orderList, bits)
 			}
 			local opt = optionality(q, it.e.qid); if opt > 1 then st.o = opt end
 			local cls = q[Q.classes]; if type(cls) == "number" and cls > 0 then st.c = cls end
+			-- Availability gates: hard required level, and prerequisite quests.
+			-- pg = preQuestGroup (ALL must be complete); ps = preQuestSingle (ANY complete).
+			local rl = q[Q.reqLevel]; if type(rl) == "number" and rl > 0 then st.rl = rl end
+			local pg = q[Q.preQuestGroup]
+			if type(pg) == "table" and #pg > 0 then
+				local t = {}; for _, id in ipairs(pg) do t[#t + 1] = math.abs(id) end; st.pg = t
+			end
+			local ps = q[Q.preQuestSingle]
+			if type(ps) == "table" and #ps > 0 then
+				local t = {}; for _, id in ipairs(ps) do t[#t + 1] = math.abs(id) end; st.ps = t
+			end
 			-- Objective coordinate (where to go DO the quest), stored when meaningfully
 			-- far from the giver so the arrow can step giver → objective → turn-in.
 			local oca, ox, oy = resolveObjective(q, z.area)
@@ -461,6 +472,9 @@ local function writeFaction(faction, steps)
 		if s.races then parts[#parts+1] = "races=" .. s.races end
 		if s.c then parts[#parts+1] = "c=" .. s.c end
 		if s.o then parts[#parts+1] = "o=" .. s.o end
+		if s.rl then parts[#parts+1] = "rl=" .. s.rl end
+		if s.pg then parts[#parts+1] = "pg={" .. table.concat(s.pg, ",") .. "}" end
+		if s.ps then parts[#parts+1] = "ps={" .. table.concat(s.ps, ",") .. "}" end
 		out[#out+1] = "{" .. table.concat(parts, ",") .. "},"
 	end
 	out[#out+1] = "})"
