@@ -36,6 +36,8 @@ C.GetItemStats = (C_Item and C_Item.GetItemStats) or _G.GetItemStats
 C.GetContainerNumSlots = (C_Container and C_Container.GetContainerNumSlots) or _G.GetContainerNumSlots
 C.GetContainerItemID   = (C_Container and C_Container.GetContainerItemID) or _G.GetContainerItemID
 C.GetContainerItemInfo = (C_Container and C_Container.GetContainerItemInfo) or _G.GetContainerItemInfo
+C.GetContainerItemLink = (C_Container and C_Container.GetContainerItemLink) or _G.GetContainerItemLink
+C.GetItemInfoInstant   = (C_Item and C_Item.GetItemInfoInstant) or _G.GetItemInfoInstant
 
 -- Quest log (C_QuestLog is the modern surface; provide stable wrappers).
 C.IsQuestFlaggedCompleted = (C_QuestLog and C_QuestLog.IsQuestFlaggedCompleted) or _G.IsQuestFlaggedCompleted
