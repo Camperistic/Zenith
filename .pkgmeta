@@ -1,5 +1,5 @@
 # BigWigs packager config — https://github.com/BigWigsMods/packager
-# The addon lives at the repo root (Zenith.toc here), packaged as "Zenith".
+# Multi-flavour addon at the repo root (Zenith_<Flavor>.toc), packaged as "Zenith".
 package-as: Zenith
 
 enable-nolib-creation: no
@@ -9,6 +9,13 @@ ignore:
   - .github
   - .pkgmeta
   - .gitignore
+  # legacy v1.x data — superseded by Data/packs (transformed in Phase 1)
+  - Data/Routes
+  - Data/Classes
+  - Data/Talents
+  - Data/Rotations
+  - Data/Pets
+  - Data/Gear
 
 manual-changelog:
   filename: CHANGELOG.md

@@ -1,0 +1,10 @@
+<Ui xmlns="http://www.blizzard.com/wow/ui/">
+	<!-- Core, after Compatibility.lua + libs. StateModel/EventBus/Registry first,
+	     then Init (which depends on everything). -->
+	<Script file="Detect.lua"/>
+	<Script file="EventBus.lua"/>
+	<Script file="Registry.lua"/>
+	<Script file="DB.lua"/>
+	<Script file="StateModel.lua"/>
+	<Script file="Init.lua"/>
+</Ui>
