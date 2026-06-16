@@ -121,6 +121,28 @@ function Route:Count() return #active end
 function Route:StepAt(i) return active[i] end
 function Route:Current() return active[rdb().cursor or 1] end
 
+-- Auto-catchup: walk the whole route, mark every step whose quest IsQuestFlagged-
+-- Completed as done (persisted per-character), then re-anchor the cursor. Run once
+-- after the quest log is primed, so a fresh install on a leveled character lands
+-- on the first quest you actually still need to do — not back at step 1.
+function Route:CatchUp()
+	local n = 0
+	for _, s in ipairs(active) do
+		if s.qid and questComplete(s.qid) then
+			local key = stepKey(s)
+			if key and not rdb().completed[key] then
+				rdb().completed[key] = true; n = n + 1
+			end
+		end
+	end
+	self:Resync()
+	if ns and ns.Print and n > 0 then
+		ns:Print(string.format("caught up: %d quest%s already done, you're on step %d / %d.",
+			n, n == 1 and "" or "s", rdb().cursor or 1, #active))
+	end
+	return n
+end
+
 function Route:FirstActionable()
 	local lvl = State:Level()
 	local fallback
@@ -172,11 +194,14 @@ local function poll()
 	end
 end
 
--- ── current guidance: the active quest, its phase, and where to go ──────────────
--- Each quest walks accept → do → turn in based on its live state, so the arrow and
--- the Guide card stay in lockstep with what you just did (accept a quest and it
--- immediately switches to the objective; finish objectives and it points home).
-local function action(s)            -- priority, mapID, x, y, stage
+-- ── batch "questing loop" guidance (accept-all → do-all → turn-in-all) ──────────
+-- Grab every quest clustered around the same spot, do them together, then turn them
+-- all in — the efficient RestedXP-style loop. Guidance() returns the single next
+-- action so the arrow and the Guide card stay in lockstep (accept this nearby quest →
+-- … → do these → … → turn these in), one concrete step at a time.
+local BATCH_R2, WINDOW = 144, 40        -- ~12-yd cluster radius; look-ahead window
+local function sq(ax, ay, bx, by) local dx, dy = ax - bx, ay - by; return dx * dx + dy * dy end
+local function action(s)                -- priority(low=do first), mapID, x, y, stage
 	if s.qid then
 		if readyTurnIn(s.qid) then return 3, s.tmap or s.mapID, s.tx or s.x, s.ty or s.y, "turn in" end
 		if inLog(s.qid)       then return 2, s.omap or s.mapID, s.ox or s.x, s.oy or s.y, "do" end
@@ -187,18 +212,118 @@ end
 
 -- { stage = "accept"|"do"|"turn in"|"go", step, mapID, x, y, label } or nil.
 function Route:Guidance()
-	local s = active[rdb().cursor or 1]; if not s then return nil end
-	if not s.qid then
-		return { stage = "go", step = s, mapID = s.mapID, x = s.x, y = s.y, label = s.zone or "" }
+	local idx = rdb().cursor or 1
+	local cur = active[idx]; if not cur then return nil end
+	local function plain(s) return { stage = "go", step = s, mapID = s.mapID, x = s.x, y = s.y, label = s.zone or "" } end
+
+	-- anchor on the first incomplete quest with coords inside the look-ahead window
+	local ax, ay, az
+	for i = idx, math.min(#active, idx + WINDOW) do
+		local s = active[i]
+		if s.kind == "quest" and s.x and s.y and not self:IsComplete(s) then ax, ay, az = s.x, s.y, s.zone; break end
 	end
-	local _, mp, x, y, st = action(s)
-	return { stage = st, step = s, mapID = mp, x = x, y = y, label = (s.zone or "") .. " (" .. st .. ")" }
+	if not ax then return plain(cur) end
+
+	-- the cluster: incomplete quests in the same zone within BATCH_R2 of the anchor
+	local batch = {}
+	for i = idx, math.min(#active, idx + WINDOW) do
+		local s = active[i]
+		if s.kind == "quest" and not self:IsComplete(s) and s.zone == az then
+			if not (s.x and s.y) or sq(ax, ay, s.x, s.y) <= BATCH_R2 then batch[#batch + 1] = s end
+		end
+	end
+	if #batch == 0 then return plain(cur) end
+
+	-- lowest active phase across the cluster → accept everything, then do, then turn in
+	local phase = 9
+	for _, s in ipairs(batch) do local p = action(s); if p < phase then phase = p end end
+	-- pick the nearest cluster member in that phase (from the player if we know where)
+	local px, py, pmap = State:Position()
+	local best, bd
+	for _, s in ipairs(batch) do
+		local p, mp, x, y, st = action(s)
+		if p == phase and mp and x and y then
+			local rx, ry = ax, ay
+			if px and pmap == mp then rx, ry = px, py end
+			local d = sq(rx, ry, x, y)
+			if not bd or d < bd then bd = d; best = { stage = st, step = s, mapID = mp, x = x, y = y,
+				label = (s.zone or "") .. " (" .. st .. ")" } end
+		end
+	end
+	return best or plain(cur)
 end
 
 function Route:NextWaypoint()
 	local g = self:Guidance()
 	if not g or not (g.mapID and g.x and g.y) then return nil end
 	return g.mapID, g.x, g.y, g.label, g.stage
+end
+
+-- Plan(limit): a forward-simulated list of the next `limit` actions, batched.
+-- For each cluster of nearby quests it emits accept-all → do-all → turn-in-all, so
+-- UP NEXT reads like RestedXP: ACCEPT q1 / ACCEPT q2 / DO q1 / DO q2 / TURN IN q1 /
+-- TURN IN q2 / ACCEPT next cluster …  Drives the Guide's UP NEXT list.
+local PHASE_NEXT = { todo = "doing", doing = "ready", ready = "done" }
+function Route:Plan(limit)
+	limit = limit or 12
+	local plan, sim = {}, {}                -- sim[qid]="todo|doing|ready|done", sim[stepKey]=true
+	local function qstate(qid)
+		if sim[qid] then return sim[qid] end
+		if questComplete(qid) then return "done" end
+		if readyTurnIn(qid)   then return "ready" end
+		if inLog(qid)         then return "doing" end
+		return "todo"
+	end
+	local function stepDone(s)
+		local k = stepKey(s); if k and sim[k] then return true end
+		return self:IsComplete(s)
+	end
+
+	local i = rdb().cursor or 1
+	while #plan < limit and i <= #active do
+		local s = active[i]
+		if stepDone(s) then
+			i = i + 1
+		elseif s.kind ~= "quest" then
+			plan[#plan + 1] = { stage = "go", step = s, label = s.text or s.zone or "" }
+			local k = stepKey(s); if k then sim[k] = true end
+			i = i + 1
+		elseif not (s.x and s.y) or not s.qid then
+			plan[#plan + 1] = { stage = "accept", step = s, label = s.text or s.quest or "" }
+			local k = stepKey(s); if k then sim[k] = true end
+			i = i + 1
+		else
+			-- form the cluster: incomplete quests in the same zone within BATCH_R2
+			local az, ax, ay = s.zone, s.x, s.y
+			local cluster, last = {}, i
+			for j = i, math.min(#active, i + WINDOW) do
+				local q = active[j]
+				if q.kind == "quest" and not stepDone(q) and q.zone == az then
+					if not (q.x and q.y) or sq(ax, ay, q.x, q.y) <= BATCH_R2 then
+						cluster[#cluster + 1] = q; last = j
+					end
+				end
+			end
+			-- emit phases in order: accept everything, do everything, turn it all in
+			for _, phase in ipairs({ "accept", "do", "turn in" }) do
+				for _, q in ipairs(cluster) do
+					if #plan >= limit then break end
+					local cur = qstate(q.qid)
+					local needed = (cur == "todo"  and "accept")
+						or (cur == "doing" and "do")
+						or (cur == "ready" and "turn in")
+					if needed == phase then
+						plan[#plan + 1] = { stage = phase, step = q, label = q.text or q.quest or "" }
+						sim[q.qid] = PHASE_NEXT[cur]
+						if phase == "turn in" then local k = stepKey(q); if k then sim[k] = true end end
+					end
+				end
+				if #plan >= limit then break end
+			end
+			i = last + 1
+		end
+	end
+	return plan
 end
 
 -- ── module ───────────────────────────────────────────────────────────────────────
@@ -209,10 +334,15 @@ ns.Registry:Add({
 		Route:Load()
 		Bus:On("LEVEL_CHANGED",   function() Route:Resync() end)
 		Bus:On("ZONE_CHANGED",    function() Route:Resync() end)
-		Bus:On("QUESTLOG_CHANGED",function() poll() end)
+		local caughtUp = false
+		Bus:On("QUESTLOG_CHANGED",function()
+			if not caughtUp then caughtUp = true; Route:CatchUp() end
+			poll()
+		end)
 		Bus:On("SETTINGS_CHANGED",function(key) if key == "routeMode" then Route:Load() end end)
 		Bus:On("SLASH", function(msg)
 			if msg == "next" then Route:Next() elseif msg == "prev" then Route:Prev()
+			elseif msg == "catchup" then Route:CatchUp()
 			elseif msg == "reset" then rdb().cursor = 1; wipe(rdb().completed); Route:Load() end
 		end)
 	end,
