@@ -51,8 +51,10 @@ end
 
 -- Quest field indices (Questie questKeys) and NPC/object spawn indices.
 local Q = { name=1, startedBy=2, finishedBy=3, reqLevel=4, level=5, races=6, classes=7,
-	objText=8, triggerEnd=9, objectives=10, sourceItemId=11, zone=17 }
-local NPC_SPAWNS, OBJ_SPAWNS = 7, 4
+	objText=8, triggerEnd=9, objectives=10, sourceItemId=11, preQuestGroup=12,
+	preQuestSingle=13, zone=17, requiredSkill=18, requiredMinRep=19, nextQuestInChain=22,
+	specialFlags=24, breadcrumb=27 }
+local NPC_SPAWNS, OBJ_SPAWNS, NPC_RANK = 7, 4, 6
 
 -- Resolve a creature/object id to a coordinate, preferring a spawn in `zoneArea`.
 local function firstSpawn(spawnTable, zoneArea)
@@ -128,6 +130,55 @@ local function firstObjectiveCreature(quest)
 end
 
 local function round(v) return math.floor(v * 10 + 0.5) / 10 end
+
+-- Any kill/interact objective creature that's elite (CMaNGOS rank 1/2/3 = elite,
+-- rare-elite, boss). Rank 4 (rare) is solo-able and doesn't count.
+local function isEliteQuest(quest)
+	local obj = quest[Q.objectives]
+	if type(obj) ~= "table" or type(obj[1]) ~= "table" then return false end
+	for _, c in ipairs(obj[1]) do
+		local npc = c[1] and npcs[c[1]]
+		local rank = npc and npc[NPC_RANK]
+		if rank and rank >= 1 and rank <= 3 then return true end
+	end
+	return false
+end
+
+-- Quests that belong to a chain (have a prerequisite/follow-up, or ARE a prerequisite
+-- for another quest). Chains are the efficient leveling backbone, so the Fastest mode
+-- follows them and drops standalone side quests. Built once over the whole DB.
+local chainConnected = {}
+do
+	local function mark(v)
+		if type(v) == "table" then for _, id in ipairs(v) do chainConnected[id] = true end
+		elseif type(v) == "number" and v ~= 0 then chainConnected[v] = true end
+	end
+	for qid, q in pairs(quests) do
+		local pg, ps, nx = q[Q.preQuestGroup], q[Q.preQuestSingle], q[Q.nextQuestInChain]
+		if (type(pg) == "table" and #pg > 0) or (type(ps) == "table" and #ps > 0)
+			or (type(nx) == "number" and nx ~= 0) then
+			chainConnected[qid] = true
+		end
+		mark(pg); mark(ps); mark(nx)
+	end
+end
+
+-- Optionality tier, driving the "route mode" filter at runtime:
+--   1 = core      (shown in Fastest, Balanced, Completionist)
+--   2 = optional  (shown in Balanced, Completionist) — breadcrumbs, escorts
+--   3 = completionist only (Completionist) — repeatable/event/profession/rep grinds, elites/group
+local function optionality(quest, qid)
+	local special = quest[Q.specialFlags] or 0
+	if math.floor(special / 1) % 2 == 1 then return 3 end   -- repeatable
+	if math.floor(special / 2) % 2 == 1 then return 3 end   -- needs world event
+	if quest[Q.requiredSkill] then return 3 end             -- profession quest
+	if quest[Q.requiredMinRep] then return 3 end            -- reputation-gated grind
+	if isEliteQuest(quest) then return 3 end                -- elite / group content
+	local nm = quest[Q.name] or ""
+	if quest[Q.breadcrumb] or nm:find("[Ee]scort") then return 2 end   -- breadcrumb / escort
+	if not chainConnected[qid] then return 2 end            -- standalone side quest
+	return 1                                                -- chain backbone (Fastest keeps these)
+end
 
 local function dist(ax, ay, bx, by) local dx, dy = ax - bx, ay - by; return math.sqrt(dx * dx + dy * dy) end
 
@@ -341,6 +392,7 @@ local function buildFaction(orderList, bits)
 				band = { reqL, lvl }, quest = q[Q.name], text = q[Q.name], detail = detail,
 				races = races,
 			}
+			local opt = optionality(q, it.e.qid); if opt > 1 then st.o = opt end
 			-- Objective coordinate (where to go DO the quest), stored when meaningfully
 			-- far from the giver so the arrow can step giver → objective → turn-in.
 			local oca, ox, oy = resolveObjective(q, z.area)
@@ -406,6 +458,7 @@ local function writeFaction(faction, steps)
 		if s.target then parts[#parts+1] = "target=" .. q(s.target) end
 		if s.item then parts[#parts+1] = "item=" .. s.item end
 		if s.races then parts[#parts+1] = "races=" .. s.races end
+		if s.o then parts[#parts+1] = "o=" .. s.o end
 		out[#out+1] = "{" .. table.concat(parts, ",") .. "},"
 	end
 	out[#out+1] = "})"

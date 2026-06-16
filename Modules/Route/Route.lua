@@ -76,6 +76,12 @@ function Route:IsComplete(s)
 	return false
 end
 
+-- ── route mode (how many quests to include) ─────────────────────────────────────
+-- A step carries optionality s.o: nil/1 = core chain, 2 = optional side quest,
+-- 3 = completionist (repeatable/profession/rep/elite/group). The mode caps it.
+local MODE_MAX = { fast = 1, balanced = 2, complete = 3 }
+local function modeCap() return MODE_MAX[ns.db.profile.routeMode or "balanced"] or 2 end
+
 -- ── load + cursor ───────────────────────────────────────────────────────────────
 function Route:Load()
 	wipe(active)
@@ -83,9 +89,10 @@ function Route:Load()
 	local pf = routeFlavor()
 	local r = routes[pf] and routes[pf][faction]
 	if not r then return end
+	local cap = modeCap()
 	local prevTravel = false
 	for i, s in ipairs(r) do
-		if raceAllowed(s.races) then
+		if raceAllowed(s.races) and (not s.o or s.o <= cap) then
 			if s.kind == "travel" and prevTravel then
 				-- collapse empty consecutive headers
 			else
@@ -213,6 +220,7 @@ ns.Registry:Add({
 		Bus:On("LEVEL_CHANGED",   function() Route:Resync() end)
 		Bus:On("ZONE_CHANGED",    function() Route:Resync() end)
 		Bus:On("QUESTLOG_CHANGED",function() poll() end)
+		Bus:On("SETTINGS_CHANGED",function(key) if key == "routeMode" then Route:Load() end end)
 		Bus:On("SLASH", function(msg)
 			if msg == "next" then Route:Next() elseif msg == "prev" then Route:Prev()
 			elseif msg == "reset" then rdb().cursor = 1; wipe(rdb().completed); Route:Load() end
