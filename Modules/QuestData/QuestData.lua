@@ -30,7 +30,7 @@ function ns.RegisterZonePack(flavor, zones)
 end
 
 local function zonesForFlavor()
-	return rawZones[ns.flavor.id]
+	return rawZones[ns:DataFlavor()]
 end
 
 function QuestData:HasZone(ui)

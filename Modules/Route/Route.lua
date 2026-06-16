@@ -25,6 +25,16 @@ local active = {}        -- flat filtered step list for this character
 function ns.RegisterRoute(flavor, faction, steps)
 	routes[flavor] = routes[flavor] or {}
 	routes[flavor][faction] = steps
+	ns.dataPacks[flavor] = true   -- mark the flavour so DataFlavor() can resolve it
+end
+
+-- The flavour whose route pack is actually loaded (mirrors ns:DataFlavor(); the
+-- loaded TOC is authoritative even if WOW_PROJECT_ID doesn't map to our id).
+local function routeFlavor()
+	if routes[ns.flavor.id] then return ns.flavor.id end
+	local df = ns:DataFlavor(); if routes[df] then return df end
+	for fid in pairs(routes) do return fid end
+	return ns.flavor.id
 end
 
 -- ── race filtering (Blizzard requiredRaces bits) ────────────────────────────────
@@ -70,7 +80,8 @@ end
 function Route:Load()
 	wipe(active)
 	local faction = State:Faction()
-	local r = routes[ns.flavor.id] and routes[ns.flavor.id][faction]
+	local pf = routeFlavor()
+	local r = routes[pf] and routes[pf][faction]
 	if not r then return end
 	local prevTravel = false
 	for i, s in ipairs(r) do
@@ -196,7 +207,7 @@ end
 -- ── module ───────────────────────────────────────────────────────────────────────
 ns.Registry:Add({
 	name = "Route",
-	IsFeatureEnabled = function() return routes[ns.flavor.id] ~= nil end,
+	IsFeatureEnabled = function() return next(routes) ~= nil end,
 	OnEnable = function()
 		Route:Load()
 		Bus:On("LEVEL_CHANGED",   function() Route:Resync() end)
