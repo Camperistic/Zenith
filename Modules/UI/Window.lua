@@ -90,13 +90,16 @@ local function buildGuide(pane)
 		detail:SetText(d)
 		objfs:SetText((g.stage == "do" and liveObjectives(s.qid)) or "")
 
-		local lines, i = {}, idx + 1
-		while i <= R:Count() and #lines < 7 do
-			local up = R:StepAt(i)
-			if up and not R:IsComplete(up) then lines[#lines + 1] = Theme:Color("dim", up.zone or "") .. " " .. (up.text or "") end
-			i = i + 1
+		local lines = {}
+		local plan = R:Plan(10)
+		-- skip plan[1] — that's already the card. Show the rest as ACCEPT/DO/TURN IN.
+		for i = 2, #plan do
+			local p = plan[i]
+			local verb = VERB[p.stage] or "DO"
+			lines[#lines + 1] = Theme:Color("gold", "[" .. verb .. "]") .. "  "
+				.. Theme:Color("dim", (p.step.zone or "") .. "  ") .. (p.label or "")
 		end
-		scroll:Set(#lines > 0 and table.concat(lines, "\n\n") or "")
+		scroll:Set(#lines > 0 and table.concat(lines, "\n") or "")
 	end
 end
 
