@@ -1,0 +1,25 @@
+## Interface: 50500
+## Title: |cff73db45Zenith|r
+## Notes: All-in-one leveling coach — route, quest world, talents, rotation, gear, stats.
+## Author: Camperistic
+## Version: 2.0.0
+## SavedVariables: ZenithDB
+## OptionalDeps: Questie
+## X-Category: Leveling
+## X-License: GPL-3.0-only
+## X-Website: https://github.com/Camperistic/Zenith
+## X-Wago-ID: bGoyvY60
+
+# Compatibility shim must load before LibStub.
+Core\Compatibility.lua
+
+# Embedded libraries (open-licensed; see CREDITS.md).
+libs\Embeds.xml
+
+# Core architecture (StateModel + EventBus + Registry + Init).
+Core\Core.xml
+
+# Feature modules.
+Modules\Modules.xml
+
+# Flavour data pack (lazy zone strings).

@@ -1,0 +1,14 @@
+<Ui xmlns="http://www.blizzard.com/wow/ui/">
+	<!-- Feature modules (views over the StateModel). They define the ns.Register*
+	     entry points the flavour data packs call, so they load before the packs. -->
+	<Script file="QuestData\QuestData.lua"/>
+	<Script file="QuestData\Pins.lua"/>
+	<Script file="Route\Route.lua"/>
+	<Script file="Route\Arrow.lua"/>
+	<Script file="UI\Theme.lua"/>
+	<Script file="UI\Widgets.lua"/>
+	<Script file="UI\Window.lua"/>
+	<Script file="UI\Launcher.lua"/>
+	<Script file="Coach\Coach.lua"/>
+	<Script file="Stats\Stats.lua"/>
+</Ui>
