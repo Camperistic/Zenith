@@ -368,10 +368,9 @@ end
 local function writeFaction(faction, steps)
 	local out = {}
 	out[#out+1] = "-- AUTO-GENERATED from the Questie TBC database by tools/import_questie.lua"
-	out[#out+1] = "-- Do not edit by hand. Quest data © the Questie project (community game data)."
-	out[#out+1] = "local ADDON_NAME, ns = ..."
-	out[#out+1] = "ns.data.questRoute = ns.data.questRoute or {}"
-	out[#out+1] = "ns.data.questRoute." .. faction .. " = {"
+	out[#out+1] = "-- Quest facts in Zenith's format; data © upstream (CMaNGOS/Questie), GPL. See CREDITS.md."
+	out[#out+1] = "local ADDON, ns = ..."
+	out[#out+1] = "ns.RegisterRoute(\"tbc\", \"" .. faction .. "\", {"
 	for _, s in ipairs(steps) do
 		local parts = { "kind=" .. q(s.kind), "zone=" .. q(s.zone) }
 		if s.qid then parts[#parts+1] = "qid=" .. s.qid end
@@ -393,8 +392,8 @@ local function writeFaction(faction, steps)
 		if s.races then parts[#parts+1] = "races=" .. s.races end
 		out[#out+1] = "{" .. table.concat(parts, ",") .. "},"
 	end
-	out[#out+1] = "}"
-	local f = assert(io.open(outDir .. "/Gen_" .. faction .. ".lua", "w"))
+	out[#out+1] = "})"
+	local f = assert(io.open(outDir .. "/Route_" .. faction .. ".lua", "w"))
 	f:write(table.concat(out, "\n")); f:write("\n"); f:close()
 	return #steps
 end
