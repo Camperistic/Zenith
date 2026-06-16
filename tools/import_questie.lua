@@ -142,7 +142,7 @@ local function clusterOrder(list, zoneArea, zoneUi)
 	for _, e in ipairs(list) do
 		local ca, x, y = resolveStart(e.q[Q.startedBy], zoneArea)
 		if x and ca == zoneArea then
-			items[#items + 1] = { e = e, x = x, y = y, lvl = e.q[Q.level], mapID = zoneUi }
+			items[#items + 1] = { e = e, x = x, y = y, lvl = e.q[Q.level], mapID = zoneUi, starter = e.starter }
 		else
 			others[#others + 1] = { e = e, lvl = e.q[Q.level],
 				x = x, y = y, mapID = (ca and areaInfo[ca] and areaInfo[ca].ui) or zoneUi }
@@ -159,6 +159,7 @@ local function clusterOrder(list, zoneArea, zoneUi)
 		end
 		if not h then h = { cx = it.x, cy = it.y, items = {}, minLvl = it.lvl }; hubs[#hubs + 1] = h end
 		h.items[#h.items + 1] = it
+		h.hasStarter = h.hasStarter or it.starter
 		local n = #h.items
 		h.cx = h.cx + (it.x - h.cx) / n           -- running centroid
 		h.cy = h.cy + (it.y - h.cy) / n
@@ -185,6 +186,9 @@ local function clusterOrder(list, zoneArea, zoneUi)
 					local d = dist(lastx, lasty, h.cx, h.cy)
 					if d < bestD then bestD, bestIdx = d, j end
 				end
+			else
+				-- start the zone tour at its racial-start (spawn) hub when there is one
+				for j, h in ipairs(group) do if h.hasStarter then bestIdx = j; break end end
 			end
 			local h = table.remove(group, bestIdx)
 			ordered[#ordered + 1] = h
@@ -268,7 +272,19 @@ local function buildFaction(orderList, bits)
 	local byZone = {}
 	for qid, q in pairs(quests) do
 		local name, zoneArea, lvl = q[Q.name], q[Q.zone], q[Q.level] or 0
+		-- Racial starter sub-zones (Northshire=9, Coldridge Valley, Shadowglen, Ammen
+		-- Vale, Valley of Trials, Deathknell, Sunstrider Isle, …) carry a zoneOrSort
+		-- areaID that Questie's areaId→uiMapId table doesn't list, so these level-1
+		-- spawn quests would be dropped entirely. Fall back to the giver's spawn area
+		-- (whose coords already live on the parent zone's map), and remember it's a
+		-- starter quest so its hub leads that zone's tour (you begin where you log in).
+		local starter = false
+		if not (type(zoneArea) == "number" and areaInfo[zoneArea]) then
+			local ca = resolveStart(q[Q.startedBy])
+			if ca and areaInfo[ca] then zoneArea = ca; starter = true end
+		end
 		local zoneName = type(zoneArea) == "number" and areaInfo[zoneArea] and areaInfo[zoneArea].name
+		if starter and not ZONE_OWNER[zoneName] then starter = false end   -- only racial starts lead
 		local isInstance = zoneName and (zoneName:find("%- Dungeon") or zoneName:find("%- Raid")
 			or zoneName:find("%- Battleground"))
 		local valid = name and #name > 0
@@ -280,7 +296,7 @@ local function buildFaction(orderList, bits)
 			and not EXCLUDE[zoneName]
 		if valid then
 			byZone[zoneArea] = byZone[zoneArea] or {}
-			table.insert(byZone[zoneArea], { qid = qid, q = q })
+			table.insert(byZone[zoneArea], { qid = qid, q = q, starter = starter })
 		end
 	end
 
