@@ -393,6 +393,7 @@ local function buildFaction(orderList, bits)
 				races = races,
 			}
 			local opt = optionality(q, it.e.qid); if opt > 1 then st.o = opt end
+			local cls = q[Q.classes]; if type(cls) == "number" and cls > 0 then st.c = cls end
 			-- Objective coordinate (where to go DO the quest), stored when meaningfully
 			-- far from the giver so the arrow can step giver → objective → turn-in.
 			local oca, ox, oy = resolveObjective(q, z.area)
@@ -458,6 +459,7 @@ local function writeFaction(faction, steps)
 		if s.target then parts[#parts+1] = "target=" .. q(s.target) end
 		if s.item then parts[#parts+1] = "item=" .. s.item end
 		if s.races then parts[#parts+1] = "races=" .. s.races end
+		if s.c then parts[#parts+1] = "c=" .. s.c end
 		if s.o then parts[#parts+1] = "o=" .. s.o end
 		out[#out+1] = "{" .. table.concat(parts, ",") .. "},"
 	end
