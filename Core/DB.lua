@@ -19,6 +19,7 @@ ns.dbDefaults = {
 		locked = false,
 		pinMode = "full",
 		scale = 1.0,
+		routeMode = "balanced",   -- fast | balanced | complete (how many quests the route includes)
 		autoEquip = false,     -- gear advisor auto-equips upgrades (out of combat only)
 	},
 	char = {

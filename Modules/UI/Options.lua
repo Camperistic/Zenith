@@ -109,6 +109,15 @@ local function buildOptions()
 			route = {
 				type = "group", inline = true, order = 30, name = "Route & Arrow",
 				args = {
+					routeMode = {
+						type = "select", order = 0, name = "Guide mode", width = "double",
+						desc = "How much of the world the route covers:\n"
+							.. "|cffffd100Fastest|r — the efficient quest-chain backbone only.\n"
+							.. "|cffffd100Balanced|r — chains plus worthwhile side quests (recommended).\n"
+							.. "|cffffd100Completionist|r — everything, including elite/group, profession and reputation quests.",
+						values = { fast = "Fastest", balanced = "Balanced", complete = "Completionist" },
+						get = get("routeMode"), set = set("routeMode"),
+					},
 					showArrow = {
 						type = "toggle", order = 1, name = "Waypoint arrow",
 						desc = "Show the on-screen directional arrow to the next route step.",
