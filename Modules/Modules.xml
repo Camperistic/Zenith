@@ -8,4 +8,6 @@
 	<Script file="UI\Widgets.lua"/>
 	<Script file="UI\Window.lua"/>
 	<Script file="UI\Launcher.lua"/>
+	<Script file="Coach\Coach.lua"/>
+	<Script file="Stats\Stats.lua"/>
 </Ui>

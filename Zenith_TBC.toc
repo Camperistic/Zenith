@@ -26,3 +26,4 @@ Modules\Modules.xml
 Data\packs\tbc\QuestData.lua
 Data\packs\tbc\Route_Alliance.lua
 Data\packs\tbc\Route_Horde.lua
+Data\packs\tbc\Classes.lua
