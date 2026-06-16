@@ -2,6 +2,7 @@
 	<!-- Feature modules (views over the StateModel). They define the ns.Register*
 	     entry points the flavour data packs call, so they load before the packs. -->
 	<Script file="QuestData\QuestData.lua"/>
+	<Script file="QuestData\Pins.lua"/>
 	<Script file="Route\Route.lua"/>
 	<Script file="Route\Arrow.lua"/>
 	<Script file="UI\Theme.lua"/>

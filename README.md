@@ -48,12 +48,20 @@ libs/                    Ace3, HereBeDragons(+Pins), LibDataBroker/DBIcon, LibSh
 Multi-flavour: one `Zenith_<Flavor>.toc` per client (TBC primary), shared body, friendly
 fail with no data pack — never a Lua error.
 
-## Status
+## Status — functional spine of all 5 pillars is in (mock-tested; needs in-game verification)
 
 - [x] **Phase 0** — skeleton: per-flavour TOCs, compat shim, lib stack, StateModel +
-  EventBus + Registry, detection, AceDB, GPL license + attribution. Loads clean; `/zenith status`.
-- [ ] Phase 1 — quest-DB map layer (transform a reuse-licensed TBC pack → Zenith format)
-- [ ] Phase 2 — route engine + native arrow
-- [ ] Phase 3 — class-coaching brain (talents / **live rotation** / gear)
-- [ ] Phase 4 — leveling stats
-- [ ] Phase 5 — themes, configurator, polish, gate pass
+  EventBus + Registry, detection, AceDB, GPL + attribution. `/zenith status`.
+- [x] **Phase 1** — quest data: lazy per-zone pack (62 zones / 3,906 quests, parsed on
+  demand) + pooled world/minimap pins (HBD-Pins) with tooltips + route/full/off filter.
+- [x] **Phase 2** — route engine (race/level-filtered, batch questing-loop) + native arrow.
+- [x] **Phase 3** — coaching: live talent next-point, **live rotation widget**, gear stat
+  priority (all 9 classes).
+- [x] **Phase 4** — leveling stats: splits, played time, live ETA-to-ding.
+- [x] **Phase 5 (core)** — themed window + tabs + 3 themes + launcher.
+
+### Remaining depth / gates (the long tail)
+Gear quest-reward picker · talent click-to-learn overlay · DB search + journey log +
+party sync · options UI + first-run configurator · importable route strings · non-TBC
+data packs · and the in-game **perf (Hellfire/STV) / taint / no-automation / smoke** gates
+— these need a live client to verify.

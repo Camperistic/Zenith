@@ -17,6 +17,7 @@ ns.dbDefaults = {
 		minimap = { hide = false },
 		modules = {},          -- [moduleName] = false to disable
 		locked = false,
+		pinMode = "full",
 		scale = 1.0,
 	},
 	char = {
