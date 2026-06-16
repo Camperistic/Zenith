@@ -19,6 +19,7 @@ ns.dbDefaults = {
 		locked = false,
 		pinMode = "full",
 		scale = 1.0,
+		autoEquip = false,     -- gear advisor auto-equips upgrades (out of combat only)
 	},
 	char = {
 		route = { key = nil, cursor = 1, completed = {} },
