@@ -47,6 +47,16 @@ local function raceAllowed(mask)
 	return math.floor(mask / bit) % 2 == 1
 end
 
+-- ── class filtering (Blizzard requiredClasses bits) ─────────────────────────────
+local CLASS_BIT = { WARRIOR=1, PALADIN=2, HUNTER=4, ROGUE=8, PRIEST=16,
+	SHAMAN=64, MAGE=128, WARLOCK=256, DRUID=1024 }
+local function classBit() return CLASS_BIT[State:Class() or ""] or 0 end
+local function classAllowed(mask)
+	if not mask or mask == 0 then return true end
+	local bit = classBit(); if bit == 0 then return true end
+	return math.floor(mask / bit) % 2 == 1
+end
+
 -- per-character persisted cursor/completions
 local function rdb() return ns.db.char.route end
 local function stepKey(s) return s.qid and ("q" .. s.qid) or s.id end
@@ -92,7 +102,7 @@ function Route:Load()
 	local cap = modeCap()
 	local prevTravel = false
 	for i, s in ipairs(r) do
-		if raceAllowed(s.races) and (not s.o or s.o <= cap) then
+		if raceAllowed(s.races) and classAllowed(s.c) and (not s.o or s.o <= cap) then
 			if s.kind == "travel" and prevTravel then
 				-- collapse empty consecutive headers
 			else
