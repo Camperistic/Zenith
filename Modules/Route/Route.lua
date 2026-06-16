@@ -143,27 +143,34 @@ function Route:CatchUp()
 	return n
 end
 
-function Route:FirstActionable()
+-- The step to focus on right now: the FIRST route step you haven't finished that is
+-- either already in your quest log (you're carrying it) or level-appropriate to pick
+-- up. Steps you've turned in are skipped; future/too-high content you don't yet have
+-- is skipped. Because completed steps are persisted, the anchor only moves forward.
+function Route:Anchor()
 	local lvl = State:Level()
 	local fallback
 	for i = 1, #active do
 		local s = active[i]
 		if not self:IsComplete(s) then
 			fallback = fallback or i
-			if not (s.band and s.band[1] and s.band[1] > lvl + AHEAD_GAP) then return i end
+			local actionable = not (s.band and s.band[1] and s.band[1] > lvl + AHEAD_GAP)
+			if (s.qid and inLog(s.qid)) or actionable then return i end
 		end
 	end
 	return fallback or (#active + 1)
 end
 
--- Anchor the cursor to where the player actually is (forward past finished work,
--- backward if it ran ahead of the player's level).
+-- Re-sync against live game state. Persists every turned-in quest, then re-anchors
+-- the cursor. Safe to call on every quest-log change — this is the heart of staying
+-- in lockstep with what you've actually done, like RestedXP's step completion.
 function Route:Resync()
-	local cur = self:Current()
-	local ahead = cur and cur.band and cur.band[1] and cur.band[1] > State:Level() + AHEAD_GAP
-	if not cur or ahead or self:IsComplete(cur) then
-		rdb().cursor = self:FirstActionable()
+	for _, s in ipairs(active) do
+		if s.qid and questComplete(s.qid) then
+			local key = stepKey(s); if key then rdb().completed[key] = true end
+		end
 	end
+	rdb().cursor = self:Anchor()
 	Bus:Fire("ROUTE_CHANGED", self:Current())
 end
 
@@ -183,15 +190,7 @@ function Route:Complete(i)
 	i = i or rdb().cursor
 	local s = active[i]; if not s then return end
 	local key = stepKey(s); if key then rdb().completed[key] = true end
-	if i == rdb().cursor then self:Next() else Bus:Fire("ROUTE_CHANGED", self:Current()) end
-end
-
-local function poll()
-	local s = Route:Current()
-	if s and Route:IsComplete(s) then
-		local key = stepKey(s); if key then rdb().completed[key] = true end
-		Route:Next()
-	end
+	self:Resync()
 end
 
 -- ── batch "questing loop" guidance (accept-all → do-all → turn-in-all) ──────────
@@ -332,14 +331,22 @@ ns.Registry:Add({
 	IsFeatureEnabled = function() return next(routes) ~= nil end,
 	OnEnable = function()
 		Route:Load()
-		Bus:On("LEVEL_CHANGED",   function() Route:Resync() end)
-		Bus:On("ZONE_CHANGED",    function() Route:Resync() end)
-		local caughtUp = false
-		Bus:On("QUESTLOG_CHANGED",function()
-			if not caughtUp then caughtUp = true; Route:CatchUp() end
-			poll()
-		end)
-		Bus:On("SETTINGS_CHANGED",function(key) if key == "routeMode" then Route:Load() end end)
+		-- Debounced re-sync: every quest-log change re-evaluates against live state
+		-- and re-anchors the cursor, so Zenith stays in lockstep with what you've done
+		-- no matter the order you do it in (RestedXP-style continuous sync).
+		local pending, caughtUp = false, false
+		local function resyncSoon()
+			if pending then return end
+			pending = true
+			C_Timer.After(0.3, function()
+				pending = false
+				if not caughtUp then caughtUp = true; Route:CatchUp() else Route:Resync() end
+			end)
+		end
+		Bus:On("LEVEL_CHANGED",    function() Route:Resync() end)
+		Bus:On("ZONE_CHANGED",     function() Route:Resync() end)
+		Bus:On("QUESTLOG_CHANGED", resyncSoon)
+		Bus:On("SETTINGS_CHANGED", function(key) if key == "routeMode" then Route:Load() end end)
 		Bus:On("SLASH", function(msg)
 			if msg == "next" then Route:Next() elseif msg == "prev" then Route:Prev()
 			elseif msg == "catchup" then Route:CatchUp()
