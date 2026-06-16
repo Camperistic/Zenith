@@ -2,7 +2,7 @@
 ## Title: |cff73db45Zenith|r
 ## Notes: All-in-one leveling coach — route, quest world, talents, rotation, gear, stats.
 ## Author: Camperistic
-## Version: 2.4.0
+## Version: 2.5.0
 ## SavedVariables: ZenithDB
 ## OptionalDeps: Questie
 ## X-Category: Leveling

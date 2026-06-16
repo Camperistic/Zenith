@@ -74,6 +74,25 @@ local function readyTurnIn(qid)
 	return inLog(qid) and C.IsQuestComplete and C.IsQuestComplete(qid)
 end
 
+-- Can the player actually accept/do this step right now? Honors the hard required
+-- level (s.rl) and prerequisite quests — pg = preQuestGroup (ALL must be complete),
+-- ps = preQuestSingle (ANY complete). Anything already in your log or completed is
+-- available by definition. This stops the route offering quests you can't take yet.
+local function available(s)
+	if not s or not s.qid then return true end
+	if inLog(s.qid) or questComplete(s.qid) then return true end
+	if s.rl and (ns.State:Level() or 0) < s.rl then return false end
+	if s.pg then
+		for _, id in ipairs(s.pg) do if not questComplete(id) then return false end end
+	end
+	if s.ps then
+		local ok = false
+		for _, id in ipairs(s.ps) do if questComplete(id) then ok = true; break end end
+		if not ok then return false end
+	end
+	return true
+end
+
 function Route:IsComplete(s)
 	if not s then return true end
 	local key = stepKey(s)
@@ -148,14 +167,13 @@ end
 -- up. Steps you've turned in are skipped; future/too-high content you don't yet have
 -- is skipped. Because completed steps are persisted, the anchor only moves forward.
 function Route:Anchor()
-	local lvl = State:Level()
 	local fallback
 	for i = 1, #active do
 		local s = active[i]
 		if not self:IsComplete(s) then
 			fallback = fallback or i
-			local actionable = not (s.band and s.band[1] and s.band[1] > lvl + AHEAD_GAP)
-			if (s.qid and inLog(s.qid)) or actionable then return i end
+			-- focus on the first unfinished step you can actually act on now
+			if (s.qid and inLog(s.qid)) or available(s) then return i end
 		end
 	end
 	return fallback or (#active + 1)
@@ -283,6 +301,8 @@ function Route:Plan(limit)
 		local s = active[i]
 		if stepDone(s) then
 			i = i + 1
+		elseif s.qid and not (inLog(s.qid) or available(s)) then
+			i = i + 1                       -- locked: required level / prerequisite not met yet
 		elseif s.kind ~= "quest" then
 			plan[#plan + 1] = { stage = "go", step = s, label = s.text or s.zone or "" }
 			local k = stepKey(s); if k then sim[k] = true end
@@ -297,7 +317,8 @@ function Route:Plan(limit)
 			local cluster, last = {}, i
 			for j = i, math.min(#active, i + WINDOW) do
 				local q = active[j]
-				if q.kind == "quest" and not stepDone(q) and q.zone == az then
+				if q.kind == "quest" and not stepDone(q) and q.zone == az
+					and (inLog(q.qid) or available(q)) then
 					if not (q.x and q.y) or sq(ax, ay, q.x, q.y) <= BATCH_R2 then
 						cluster[#cluster + 1] = q; last = j
 					end
